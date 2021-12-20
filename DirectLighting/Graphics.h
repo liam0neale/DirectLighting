@@ -1,10 +1,9 @@
 #pragma once
 #include "DXDefines.h"
 #include "GraphicsData.h"
-#include "D12Core.h"
 #include "LWindow.h"
 
-using namespace GraphicsData;
+using namespace GData;
 
 class Graphics
 {
@@ -21,5 +20,9 @@ private:
 	bool InitSwapchain(LWindow& _window);
 	bool InitRenderTargets();
 	bool InitCommandAllocators();
+	bool InitCommandList();
+	bool InitFence();
+
+	
 };
 

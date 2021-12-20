@@ -56,9 +56,6 @@
     <ClInclude Include="d3dx12.h">
       <Filter>Header Files\Defines</Filter>
     </ClInclude>
-    <ClInclude Include="LData.h">
-      <Filter>Header Files\Data</Filter>
-    </ClInclude>
     <ClInclude Include="D12Core.h">
       <Filter>Constant</Filter>
     </ClInclude>

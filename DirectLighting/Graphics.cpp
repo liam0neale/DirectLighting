@@ -9,7 +9,7 @@ bool Graphics::OnInit(LWindow &_window)
 		return false;
 	}
 
-	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets();
+	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets() && InitCommandAllocators() && InitCommandList() && InitFence();
 	
 	
 	return setup;
@@ -86,8 +86,8 @@ bool Graphics::InitSwapchain(LWindow& _window)
 	HRESULT hr;
 
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
-	backBufferDesc.Width = D12Core::getWidth(); // buffer width
-	backBufferDesc.Height = D12Core::getHeight(); // buffer height
+	backBufferDesc.Width = 1;//D12Core::getWidth(); // buffer width
+	backBufferDesc.Height = 1;//D12Core::getHeight(); // buffer height
 	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the buffer (rgba 32 bits, 8 bits for each chanel)
 
 	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
@@ -184,3 +184,45 @@ bool Graphics::InitCommandAllocators()
 	}
 	return true;
 }
+
+//you will want as many command lists as you have threads recording commands
+bool Graphics::InitCommandList()
+{
+	HRESULT hr;
+	// create the command list with the first allocator
+	hr = m_pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_pCommandAllocator[0], NULL, IID_PPV_ARGS(&m_pCommandList));
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	// command lists are created in the recording state. the main loop will set it up for recording again so close it now
+	m_pCommandList->Close();
+	return true;
+}
+
+//only using a single thread, so we only need one fence event, but since we are tripple buffering, we have three fences, one for each frame buffer
+bool Graphics::InitFence()
+{
+	HRESULT hr;
+	// create the fences
+	for (int i = 0; i < frameBufferCount; i++)
+	{
+		hr = m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFence[i]));
+		if (FAILED(hr))
+		{
+			return false;
+		}
+		m_fenceValue[i] = 0; // set the initial fence value to 0
+	}
+
+	// create a handle to a fence event
+	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (m_fenceEvent == nullptr)
+	{
+		return false;
+	}
+
+	return true;
+}
+

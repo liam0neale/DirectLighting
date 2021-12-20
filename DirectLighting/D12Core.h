@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include "LWindow.h"
-
+#include "Graphics.h"
 
 class D12Core
 {
@@ -23,11 +23,17 @@ protected:
 	static unsigned int m_height;
 	float m_aspectRatio;
 
+	Graphics* m_pGraphics = nullptr;
+
 private:
 	// Root assets path.
 	std::string m_assetsPath;
 
 	// Window title.
 	std::string m_title;
+
+	
+
+	
 };
 
