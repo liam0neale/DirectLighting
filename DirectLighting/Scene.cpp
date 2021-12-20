@@ -35,22 +35,22 @@ bool Scene::onRender()
   m_pGraphics->UpdatePipeline(); // update the pipeline by sending commands to the commandqueue
 
   // create an array of command lists (only one command list here)
-  ID3D12CommandList* ppCommandLists[] = { m_pCommandList };
+  ID3D12CommandList* ppCommandLists[] = { m_pGraphics->CommandList() };
 
   // execute the array of command lists
-  m_pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+  m_pGraphics->CommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
   // this command goes in at the end of our command queue. we will know when our command queue 
   // has finished because the fence value will be set to "fenceValue" from the GPU since the command
   // queue is being executed on the GPU
-  hr = m_pCommandQueue->Signal(m_pFence[m_frameIndex], m_fenceValue[m_frameIndex]);
+  hr = m_pGraphics->CommandQueue()->Signal(m_pGraphics->Fence()[m_pGraphics->FrameIndex()], m_pGraphics->FenceValue()[m_pGraphics->FrameIndex()]);
   if (FAILED(hr))
   {
     m_status = Status::sERRORED;
   }
 
   // present the current backbuffer
-  hr = m_pSwapChain->Present(0, 0);
+  hr = m_pGraphics->SwapChain()->Present(0, 0);
   if (FAILED(hr))
   {
     m_status = Status::sERRORED;
