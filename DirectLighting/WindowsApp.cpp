@@ -47,7 +47,10 @@ int WindowsApp::messageloop(D12Core* pCore)
 {
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG));
-	while (true)
+
+	EngineStatus::m_status = EngineStatus::Status::sRUNNING;
+	bool running = true;
+	while (running)
 	{
 		BOOL PeekMessageL(
 			LPMSG lpMsg,
@@ -66,8 +69,18 @@ int WindowsApp::messageloop(D12Core* pCore)
 		}
 		else {
 			// run game code  
-			 pCore->onUpdate();
-			 pCore->onRender();
+			switch (EngineStatus::m_status)
+			{
+				case EngineStatus::Status::sRUNNING:
+				{
+					pCore->onUpdate();
+					pCore->onRender();
+				}break;
+				case EngineStatus::Status::sERRORED:
+				{
+					running = false;
+				}break;
+			}
 		}
 	}
 	pCore->onDestroy();

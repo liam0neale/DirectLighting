@@ -3,6 +3,7 @@
 
 #include "D12Core.h"
 #include "LWindow.h"
+#include "Status.h"
 
 class WindowsApp
 {

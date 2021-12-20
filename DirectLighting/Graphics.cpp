@@ -11,8 +11,119 @@ bool Graphics::OnInit(LWindow &_window)
 
 	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets() && InitCommandAllocators() && InitCommandList() && InitFence();
 	
-	
 	return setup;
+}
+
+void Graphics::UpdatePipeline()
+{
+	HRESULT hr;
+	
+	// We have to wait for the gpu to finish with the command allocator before we reset it
+	WaitForPreviousFrame();
+
+	// we can only reset an allocator once the gpu is done with it
+	// resetting an allocator frees the memory that the command list was stored in
+	hr = m_pCommandAllocator[m_frameIndex]->Reset();
+	if (FAILED(hr))
+	{
+		m_status = Status::sERRORED;
+	}
+
+	/*by resetting the command list we are putting it into
+	 a recording state so we can start recording commands into the command allocator.
+	 the command allocator that we reference here may have multiple command lists
+	 associated with it, but only one can be recording at any time. Make sure
+	 that any other command lists associated to this command allocator are in
+	 the closed state (not recording).
+	 Here you will pass an initial pipeline state object as the second parameter,
+	 but in this tutorial we are only clearing the rtv, and do not actually need
+	 anything but an initial default pipeline, which is what we get by setting
+	 the second parameter to NULL*/
+	hr = m_pCommandList->Reset(m_pCommandAllocator[m_frameIndex], NULL);
+	if (FAILED(hr))
+	{
+		m_status = Status::sERRORED;
+	}
+	
+	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
+
+// transition the "frameIndex" render target from the present state to the render target state so the command list draws to it starting from here
+	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+
+	// set the render target for the output merger stage (the output of the pipeline)
+	m_pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	// Clear the render target by using the ClearRenderTargetView command
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	m_pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
+	// warning if present is called on the render target when it's not in the present state
+	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	hr = m_pCommandList->Close();
+	if (FAILED(hr))
+	{
+		m_status = Status::sERRORED;
+	}
+}
+
+void Graphics::WaitForPreviousFrame()
+{
+	HRESULT hr;
+
+	// swap the current rtv buffer index so we draw on the correct buffer
+	m_frameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+
+	// if the current fence value is still less than "fenceValue", then we know the GPU has not finished executing
+	// the command queue since it has not reached the "commandQueue->Signal(fence, fenceValue)" command
+	if (m_pFence[m_frameIndex]->GetCompletedValue() < m_fenceValue[m_frameIndex])
+	{
+		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
+		hr = m_pFence[m_frameIndex]->SetEventOnCompletion(m_fenceValue[m_frameIndex], m_fenceEvent);
+		if (FAILED(hr))
+		{
+			m_status = Status::sERRORED;
+		}
+
+		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
+		// has reached "fenceValue", we know the command queue has finished executing
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+	}
+
+	// increment fenceValue for next frame
+	m_fenceValue[m_frameIndex]++;
+}
+
+void Graphics::CleanUp()
+{
+	// wait for the gpu to finish all frames
+	for (int i = 0; i < m_frameBufferCount; ++i)
+	{
+		m_frameIndex = i;
+		WaitForPreviousFrame();
+	}
+
+	// get swapchain out of full screen before exiting
+	BOOL fs = false;
+	if (m_pSwapChain->GetFullscreenState(&fs, NULL))
+		m_pSwapChain->SetFullscreenState(false, NULL);
+
+	m_pDevice->Release();
+	m_pSwapChain->Release();
+	m_pCommandQueue->Release();
+	m_pRTVDescriptorHeap->Release();
+	m_pCommandList->Release();
+
+	for (int i = 0; i < m_frameBufferCount; ++i)
+	{
+		m_pRenderTargets[i]->Release();
+		m_pCommandAllocator[i]->Release();
+		m_pFence[i]->Release();
+	};
 }
 
 bool Graphics::InitDevice()
@@ -96,7 +207,7 @@ bool Graphics::InitSwapchain(LWindow& _window)
 
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferCount = frameBufferCount; // number of buffers we have
+	swapChainDesc.BufferCount = m_frameBufferCount; // number of buffers we have
 	swapChainDesc.BufferDesc = backBufferDesc; // our back buffer description
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // this says the pipeline will render to this swap chain
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // dxgi will discard the buffer (data) after we call present
@@ -129,7 +240,7 @@ bool Graphics::InitRenderTargets()
 	HRESULT hr;
 	// describe an rtv descriptor heap and create
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = frameBufferCount; // number of descriptors for this heap.
+	rtvHeapDesc.NumDescriptors = m_frameBufferCount; // number of descriptors for this heap.
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // this heap is a render target view heap
 
 	// This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
@@ -150,7 +261,7 @@ bool Graphics::InitRenderTargets()
 	// but we cannot literally use it like a c++ pointer.
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	// Create a RTV for each buffer (double buffering is two buffers, tripple buffering is 3).
-	for (int i = 0; i < frameBufferCount; i++)
+	for (int i = 0; i < m_frameBufferCount; i++)
 	{
 		// first we get the n'th buffer in the swap chain and store it in the n'th
 		// position of our ID3D12Resource array
@@ -174,7 +285,7 @@ bool Graphics::InitRenderTargets()
 bool Graphics::InitCommandAllocators()
 {
 	HRESULT hr;
-	for (int i = 0; i < frameBufferCount; i++)
+	for (int i = 0; i < m_frameBufferCount; i++)
 	{
 		hr = m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_pCommandAllocator[i]));
 		if (FAILED(hr))
@@ -206,7 +317,7 @@ bool Graphics::InitFence()
 {
 	HRESULT hr;
 	// create the fences
-	for (int i = 0; i < frameBufferCount; i++)
+	for (int i = 0; i < m_frameBufferCount; i++)
 	{
 		hr = m_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pFence[i]));
 		if (FAILED(hr))

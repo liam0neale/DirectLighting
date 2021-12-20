@@ -74,5 +74,8 @@
     <ClInclude Include="GraphicsData.h">
       <Filter>Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Status.h">
+      <Filter>Header Files\Data</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
