@@ -19,36 +19,39 @@
     <Filter Include="Header Files\Data">
       <UniqueIdentifier>{16fe15d8-45f1-4be9-9023-6179402ccedd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{3ff3890f-5f8f-4fc1-9453-4c58bb9f51df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Constant">
+      <UniqueIdentifier>{06f7e0d8-cec4-444f-a4fe-8af8d1be2f6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Specific">
+      <UniqueIdentifier>{f29547af-681c-4b42-a1df-97e01b4749c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="D12Core.cpp">
+      <Filter>Constant</Filter>
+    </ClCompile>
     <ClCompile Include="LWindow.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Constant</Filter>
     </ClCompile>
     <ClCompile Include="WindowsApp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="D12Core.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Constant</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics.cpp">
+      <Filter>Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DXDefines.h">
       <Filter>Header Files\Defines</Filter>
-    </ClInclude>
-    <ClInclude Include="LWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowsApp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="D12Core.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="d3dx12.h">
       <Filter>Header Files\Defines</Filter>
@@ -56,8 +59,23 @@
     <ClInclude Include="LData.h">
       <Filter>Header Files\Data</Filter>
     </ClInclude>
+    <ClInclude Include="D12Core.h">
+      <Filter>Constant</Filter>
+    </ClInclude>
+    <ClInclude Include="LWindow.h">
+      <Filter>Constant</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsApp.h">
+      <Filter>Constant</Filter>
+    </ClInclude>
     <ClInclude Include="Scene.h">
-      <Filter>Header Files</Filter>
+      <Filter>Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsData.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

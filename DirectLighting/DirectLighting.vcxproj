@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="D12Core.cpp" />
+    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="LWindow.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Scene.cpp" />
@@ -165,6 +166,8 @@
     <ClInclude Include="D12Core.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DXDefines.h" />
+    <ClInclude Include="Graphics.h" />
+    <ClInclude Include="GraphicsData.h" />
     <ClInclude Include="LData.h" />
     <ClInclude Include="LWindow.h" />
     <ClInclude Include="Scene.h" />

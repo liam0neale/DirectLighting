@@ -10,6 +10,8 @@ LWindow::~LWindow()
 
 bool LWindow::Init(HINSTANCE& _hInstance, int _showWnd, int _width, int _height, bool _windowed, WNDPROC _wndProc, LPCSTR _title)
 {
+  m_fullscreen = !_windowed;
+
   typedef struct _WNDCLASS {
     UINT cbSize;
     UINT style;

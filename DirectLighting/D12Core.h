@@ -14,13 +14,13 @@ public:
 	virtual bool onRender() = 0;
 	virtual bool onDestroy() = 0;
 
-	int getWidth(){return m_width;}
-	int getHeight(){return m_height;}
+	static int getWidth(){return m_width;}
+	static int getHeight(){return m_height;}
 	std::string getTitle(){return m_title;}
 
 protected:
-	unsigned int m_width;
-	unsigned int m_height;
+	static unsigned int m_width;
+	static unsigned int m_height;
 	float m_aspectRatio;
 
 private:
