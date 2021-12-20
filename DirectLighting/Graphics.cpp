@@ -169,3 +169,18 @@ bool Graphics::InitRenderTargets()
 
 	return true;
 }
+
+//command allocator is used to allocate memory on the GPU for the commands we want to execute 
+bool Graphics::InitCommandAllocators()
+{
+	HRESULT hr;
+	for (int i = 0; i < frameBufferCount; i++)
+	{
+		hr = m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_pCommandAllocator[i]));
+		if (FAILED(hr))
+		{
+			return false;
+		}
+	}
+	return true;
+}

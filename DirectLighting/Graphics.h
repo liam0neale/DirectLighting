@@ -20,5 +20,6 @@ private:
 	bool InitCommandQueue();
 	bool InitSwapchain(LWindow& _window);
 	bool InitRenderTargets();
+	bool InitCommandAllocators();
 };
 
