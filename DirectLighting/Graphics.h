@@ -19,5 +19,6 @@ private:
 	bool InitDevice();
 	bool InitCommandQueue();
 	bool InitSwapchain(LWindow& _window);
+	bool InitRenderTargets();
 };
 

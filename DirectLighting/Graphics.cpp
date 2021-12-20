@@ -9,7 +9,7 @@ bool Graphics::OnInit(LWindow &_window)
 		return false;
 	}
 
-	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window);
+	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets();
 	
 	
 	return setup;
@@ -83,7 +83,7 @@ bool Graphics::InitCommandQueue()
 
 bool Graphics::InitSwapchain(LWindow& _window)
 {
-	// -- Create the Swap Chain (double/tripple buffering) -- //
+	HRESULT hr;
 
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
 	backBufferDesc.Width = D12Core::getWidth(); // buffer width
@@ -106,15 +106,66 @@ bool Graphics::InitSwapchain(LWindow& _window)
 
 	IDXGISwapChain* tempSwapChain;
 
-	dxgiFactory->CreateSwapChain(
+	hr = dxgiFactory->CreateSwapChain(
 		m_pCommandQueue, // the queue will be flushed once the swap chain is created
 		&swapChainDesc, // give it the swap chain description we created above
 		&tempSwapChain // store the created swap chain in a temp IDXGISwapChain interface
 	);
 
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
 	m_pSwapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
 
 	m_frameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+
+	return true;
+}
+
+bool Graphics::InitRenderTargets()
+{
+	HRESULT hr;
+	// describe an rtv descriptor heap and create
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = frameBufferCount; // number of descriptors for this heap.
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // this heap is a render target view heap
+
+	// This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
+	// otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	hr = m_pDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_pRTVDescriptorHeap));
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	// get the size of a descriptor in this heap (this is a rtv heap, so only rtv descriptors should be stored in it.
+	// descriptor sizes may vary from device to device, which is why there is no set size and we must ask the 
+	// device to give us the size. we will use this size to increment a descriptor handle offset
+	m_rtvDescriptorSize = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	// get a handle to the first descriptor in the descriptor heap. a handle is basically a pointer,
+	// but we cannot literally use it like a c++ pointer.
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	// Create a RTV for each buffer (double buffering is two buffers, tripple buffering is 3).
+	for (int i = 0; i < frameBufferCount; i++)
+	{
+		// first we get the n'th buffer in the swap chain and store it in the n'th
+		// position of our ID3D12Resource array
+		hr = m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_pRenderTargets[i]));
+		if (FAILED(hr))
+		{
+			return false;
+		}
+
+		// the we "create" a render target view which binds the swap chain buffer (ID3D12Resource[n]) to the rtv handle
+		m_pDevice->CreateRenderTargetView(m_pRenderTargets[i], nullptr, rtvHandle);
+
+		// we increment the rtv handle by the rtv descriptor size we got above
+		rtvHandle.Offset(1, m_rtvDescriptorSize);
+	}
 
 	return true;
 }
