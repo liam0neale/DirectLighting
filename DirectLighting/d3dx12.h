@@ -10,6 +10,7 @@
 
 #include "d3d12.h"
 
+
 #if defined( __cplusplus )
 
 struct CD3DX12_DEFAULT {};
