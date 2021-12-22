@@ -1,5 +1,6 @@
 #pragma once
 #include "D12Core.h"
+
 class Scene : public D12Core
 {
 public:
