@@ -28,6 +28,9 @@
     <Filter Include="Specific">
       <UniqueIdentifier>{f29547af-681c-4b42-a1df-97e01b4749c5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Graphics\Shaders">
+      <UniqueIdentifier>{624c576d-f5cd-47f4-83d8-51e666c51938}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -77,5 +80,13 @@
     <ClInclude Include="Status.h">
       <Filter>Header Files\Data</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Graphics\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShader.hlsl">
+      <Filter>Graphics\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
