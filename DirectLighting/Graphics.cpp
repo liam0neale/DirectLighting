@@ -384,7 +384,7 @@ bool Graphics::CompileMyShaders()
 	// shader bytecode, which of course is faster than compiling
 	// them at runtime
 
-	/*
+	
 	// compile vertex shader
 	HRESULT hr;
 	ID3DBlob* vertexShader; // d3d blob for holding vertex shader bytecode
@@ -436,7 +436,7 @@ bool Graphics::CompileMyShaders()
 
 
 	m_psoData.vertexShaderBytecode = vertexShaderBytecode;
-	m_psoData.pixelShaderBytecode = pixelShaderBytecode;*/
+	m_psoData.pixelShaderBytecode = pixelShaderBytecode;
 	return true;
 }
 
