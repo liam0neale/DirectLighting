@@ -1,12 +1,31 @@
 #pragma once
+#include <Windows.h>
+#include <D3d12.h>
+#include <D3d12SDKLayers.h>
+#include <dxgi1_4.h>
+#include <wrl.h>
+#include <DirectXMath.h>
+#include <dxgi.h>
+#include <d3dcompiler.h>
+
+#pragma comment(lib, "dxgi")
+#pragma comment(lib, "d3dcompiler")
+
 #include "DXDefines.h"
-#include "GraphicsData.h"
 #include "LWindow.h"
 #include "Status.h"
+#include "GraphicsData.h"
+
+#define D3DCOMPILE_DEBUG 1
+
 
 //using namespace GData;
 using namespace EngineStatus;
 
+struct Vertex
+{
+	float pos[3];
+};
 class Graphics
 {
 public:
@@ -41,7 +60,16 @@ private:
 	bool InitCommandList();
 	bool InitFence();
 
-	//Objects
+	//Drawing
+	bool InitRootSignature();
+	bool CompileMyShaders();
+	bool CreateInputLayout();
+	bool CreatePSO(PSOData& _psoData);
+	bool CreateVertexBuffer();
+
+	//-------
+
+	//For Setting Up The Pipeline
 	static const int m_frameBufferCount = 3; // number of buffers we want, 2 for double buffering, 3 for tripple buffering
 
 	IDXGIFactory4* dxgiFactory = nullptr;
@@ -71,6 +99,20 @@ private:
 
 	int m_rtvDescriptorSize; // size of the rtv descriptor on the device (all front and back buffers will be the same size)
 
+	//For Drawing
+	PSOData m_psoData;
+	ID3D12PipelineState* m_pPipelineStateObject; // pso containing a pipeline state
+
+	ID3D12RootSignature* m_pRootSignature; // root signature defines data shaders will access
+
+	D3D12_VIEWPORT m_viewport; // area that output from rasterizer will be stretched to.
+
+	D3D12_RECT m_scissorRect; // the area to draw in. pixels outside that area will not be drawn onto
+
+	ID3D12Resource* m_pVertexBuffer; // a default buffer in GPU memory that we will load vertex data for our triangle into
+
+	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView; // a structure containing a pointer to the vertex data in gpu memory
+																						 // the total size of the buffer, and the size of each element (vertex)
 	
 };
 
