@@ -2,18 +2,19 @@
 #include <Windows.h>
 #include <D3d12.h>
 #include <D3d12SDKLayers.h>
-#include <dxgi1_4.h>
+//#include <dxgi1_4.h>
 #include <wrl.h>
 #include <DirectXMath.h>
 #include <dxgi.h>
 #include <d3dcompiler.h>
 
 #pragma comment(lib, "dxgi")
-#pragma comment(lib, "d3dcompiler")
+#pragma comment(lib, "D3DCompiler")
 
 #include "DXDefines.h"
 #include "LWindow.h"
 #include "Status.h"
+#include "d3dx12.h"
 #include "GraphicsData.h"
 
 #define D3DCOMPILE_DEBUG 1
@@ -21,7 +22,8 @@
 
 //using namespace GData;
 using namespace EngineStatus;
-
+using namespace DirectX;
+using namespace Microsoft::WRL;
 struct Vertex
 {
 	float pos[3];

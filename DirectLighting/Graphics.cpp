@@ -388,7 +388,7 @@ bool Graphics::InitRootSignature()
 	{
 		return false;
 	}
-	//m_psoData.m_pRootSignature = m_pRootSignature;
+	m_psoData.m_pRootSignature = m_pRootSignature;
 	return true;
 }
 
@@ -405,6 +405,7 @@ bool Graphics::CompileMyShaders()
 	HRESULT hr;
 	ID3DBlob* vertexShader; // d3d blob for holding vertex shader bytecode
 	ID3DBlob* errorBuff; // a buffer holding the error data if any
+	//D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &pixelShader, nullptr);
 	hr = D3DCompileFromFile(L"VertexShader.hlsl",
 		nullptr,
 		nullptr,
@@ -428,6 +429,7 @@ bool Graphics::CompileMyShaders()
 
 	// compile pixel shader
 	ID3DBlob* pixelShader;
+	//D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &pixelShader, nullptr);
 	hr = D3DCompileFromFile(L"PixelShader.hlsl",
 		nullptr,
 		nullptr,
@@ -470,7 +472,7 @@ bool Graphics::CreateInputLayout()
 	inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
 	inputLayoutDesc.pInputElementDescs = inputLayout;
 
-	//m_psoData.inputLayoutDesc = inputLayoutDesc;
+	m_psoData.inputLayoutDesc = inputLayoutDesc;
 	return true;
 }
 
