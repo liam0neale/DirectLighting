@@ -1,32 +1,38 @@
 #pragma once
+
+/*
+#include <Windows.h>
+#include "DXDefines.h"
+#include "LWindow.h"
+#include "Status.h"
+#include "d3dx12.h"
+#include "GraphicsData.h"
+*/
 #include <Windows.h>
 #include <D3d12.h>
 #include <D3d12SDKLayers.h>
-//#include <dxgi1_4.h>
+#include <dxgi1_4.h>
 #include <wrl.h>
 #include <DirectXMath.h>
 #include <dxgi.h>
 #include <d3dcompiler.h>
 
 #pragma comment(lib, "dxgi")
-#pragma comment(lib, "D3DCompiler")
+#pragma comment(lib, "d3dcompiler")
 
-#include "DXDefines.h"
+
+#include "D3dx12.h"
 #include "LWindow.h"
-#include "Status.h"
-#include "d3dx12.h"
-#include "GraphicsData.h"
 
-#define D3DCOMPILE_DEBUG 1
+#include "GraphicsData.h"
 
 
 //using namespace GData;
-using namespace EngineStatus;
 using namespace DirectX;
 using namespace Microsoft::WRL;
 struct Vertex
 {
-	float pos[3];
+	XMFLOAT3 pos;
 };
 class Graphics
 {
@@ -37,10 +43,12 @@ public:
 	bool OnInit(LWindow& _window);
 
 	void UpdatePipeline();
+	void Render();
 	void WaitForPreviousFrame();
 	void CleanUp();
 
 	//Gets
+	ID3D12Device* Device(){return m_pDevice;}
 	IDXGISwapChain3* SwapChain(){return m_pSwapChain;}
 	ID3D12CommandQueue* CommandQueue() {return m_pCommandQueue;}
 	ID3D12DescriptorHeap* RTVDescriptorHeap() {return m_pRTVDescriptorHeap;}
@@ -114,7 +122,7 @@ private:
 	ID3D12Resource* m_pVertexBuffer; // a default buffer in GPU memory that we will load vertex data for our triangle into
 
 	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView; // a structure containing a pointer to the vertex data in gpu memory
-																						 // the total size of the buffer, and the size of each element (vertex)
+																						   // the total size of the buffer, and the size of each element (vertex)
 	
 };
 
