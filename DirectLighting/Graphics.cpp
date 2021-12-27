@@ -62,7 +62,8 @@ void Graphics::UpdatePipeline()
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
 // transition the "frameIndex" render target from the present state to the render target state so the command list draws to it starting from here
-	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	const CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	m_pCommandList->ResourceBarrier(1, &barrier);
 
 	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
@@ -76,7 +77,8 @@ void Graphics::UpdatePipeline()
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
 	// warning if present is called on the render target when it's not in the present state
-	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	const CD3DX12_RESOURCE_BARRIER barrier02 = CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	m_pCommandList->ResourceBarrier(1, &barrier02);
 
 	hr = m_pCommandList->Close();
 	if (FAILED(hr))
@@ -509,10 +511,12 @@ bool Graphics::CreateVertexBuffer()
 	// default heap is memory on the GPU. Only the GPU has access to this memory
 	// To get data into this heap, we will have to upload the data using
 	// an upload heap
+	const CD3DX12_HEAP_PROPERTIES heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	const CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(vBufferSize);
 	m_pDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
+		&heapProp, // a default heap
 		D3D12_HEAP_FLAG_NONE, // no flags
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
+		&bufferDesc, // resource description for a buffer
 		D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
 																		// from the upload heap to this heap
 		nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
@@ -525,10 +529,12 @@ bool Graphics::CreateVertexBuffer()
 	// upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
 	// We will upload the vertex buffer using this heap to the default heap
 	ID3D12Resource* iBufferUploadHeap;
+	const CD3DX12_HEAP_PROPERTIES heapProp02 =  CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	const CD3DX12_RESOURCE_DESC bufferDesc02 = CD3DX12_RESOURCE_DESC::Buffer(vBufferSize);
 	m_pDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
+		&heapProp02, // upload heap
 		D3D12_HEAP_FLAG_NONE, // no flags
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
+		&bufferDesc02, // resource description for a buffer
 		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
 		nullptr,
 		IID_PPV_ARGS(&iBufferUploadHeap));
@@ -544,8 +550,9 @@ bool Graphics::CreateVertexBuffer()
 	if(iBufferUploadHeap != 0)
 		UpdateSubresources(m_pCommandList, m_pVertexBuffer, iBufferUploadHeap, 0, 0, 1, &vertexData);
 
+	const CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_pVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 	// transition the vertex buffer data from copy destination state to vertex buffer state
-	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	m_pCommandList->ResourceBarrier(1, &barrier);
 
 	// Now we execute the command list to upload the initial assets (triangle data)
 	m_pCommandList->Close();
