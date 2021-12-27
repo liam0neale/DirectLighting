@@ -10,6 +10,6 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 	int nShowCmd)
 
 {
-	Scene* scene = new Scene(1280, 720, "D3D12 Hello Triangle");
+	Scene* scene = new Scene(1280, 720, "Liams");
 	return WindowsApp::Run(scene, hInstance, nShowCmd);
 }

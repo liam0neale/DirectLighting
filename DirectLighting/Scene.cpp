@@ -30,6 +30,7 @@ bool Scene::onUpdate()
 
 bool Scene::onRender()
 {
+  /*
   HRESULT hr;
 
   m_pGraphics->UpdatePipeline(); // update the pipeline by sending commands to the commandqueue
@@ -46,15 +47,16 @@ bool Scene::onRender()
   hr = m_pGraphics->CommandQueue()->Signal(m_pGraphics->Fence()[m_pGraphics->FrameIndex()], m_pGraphics->FenceValue()[m_pGraphics->FrameIndex()]);
   if (FAILED(hr))
   {
-    m_status = Status::sERRORED;
+    return false;
   }
 
   // present the current backbuffer
   hr = m_pGraphics->SwapChain()->Present(0, 0);
   if (FAILED(hr))
   {
-    m_status = Status::sERRORED;
-  }
+    return false;
+  }*/
+  m_pGraphics->Render();
 
   return true;
 }
