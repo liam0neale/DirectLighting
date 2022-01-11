@@ -76,6 +76,7 @@ private:
 	bool CreateInputLayout();
 	bool CreatePSO(PSOData& _psoData);
 	bool CreateVertexBuffer();
+	bool CreateIndexBuffer(int _vBufferSize, ID3D12Resource* _pVBufferUploadHeap);
 
 	//-------
 
@@ -123,6 +124,9 @@ private:
 
 	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView; // a structure containing a pointer to the vertex data in gpu memory
 																						   // the total size of the buffer, and the size of each element (vertex)
+
+	ID3D12Resource* m_pIndexBuffer;
+	D3D12_INDEX_BUFFER_VIEW m_indexBufferView; 
 	
 };
 
