@@ -93,7 +93,7 @@ void Graphics::UpdatePipeline()
 	m_pCommandList->IASetVertexBuffers(0, 1, &m_vertexBufferView); // set the vertex buffer (using the vertex buffer view)
 	m_pCommandList->IASetIndexBuffer(&m_indexBufferView);
 	m_pCommandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // finally draw 3 vertices (draw the triangle)
-	m_pCommandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // finally draw 3 vertices (draw the triangle)
+	m_pCommandList->DrawIndexedInstanced(6, 1, 0, 4, 0); // finally draw 3 vertices (draw the triangle)
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
 	// warning if present is called on the render target when it's not in the present state
@@ -637,16 +637,16 @@ bool Graphics::CreatePSO(PSOData& _psoData)
 	Vertex vList[] = 
 {
 			// first triangle
-			Vertex({ 0.5f, -0.5f, 0.5f }), // top left
+			Vertex({ -0.5f,  0.5f, 0.5f  }), // top left
 			Vertex({ 0.5f, -0.5f, 0.5f }), // bottom right
 			Vertex({ -0.5f, -0.5f, 0.5f }), // bottom left
 			Vertex({ 0.5f, 0.5f, 0.5f  }),
 
 			// second triangle
-			Vertex({-0.75f,  0.75f, 0.7f} ), // top left
-			Vertex({ 0.0f, 0.0f, 0.7f } ), // bottom right
-			Vertex({ -0.75f, 0.0f, 0.7f}), // bottom left
-			Vertex({ 0.0f, 0.75f, 0.7f})
+			Vertex({-0.75f,  0.75f,  0.7f} ), // top left
+			Vertex({ 0.0f,  0.0f, 0.7f } ), // bottom right
+			Vertex({ -0.75f,  0.0f, 0.7f}), // bottom left
+			Vertex({  0.0f,  0.75f,  0.7f})
 	};
 
 	int vBufferSize = sizeof(vList);
