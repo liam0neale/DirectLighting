@@ -32,7 +32,16 @@ using namespace DirectX;
 using namespace Microsoft::WRL;
 struct Vertex
 {
+	Vertex(XMFLOAT3 _pos/*, XMFLOAT4 _col*/)
+	{
+		//col = _col;
+		pos = _pos;
+	}
 	XMFLOAT3 pos;
+	//XMFLOAT4 col;
+};
+struct ConstantBuffer {
+	XMFLOAT4 colorMultiplier;
 };
 class Graphics
 {
@@ -78,6 +87,9 @@ private:
 	bool CreateVertexBuffer();
 	bool CreateIndexBuffer(int _vBufferSize, ID3D12Resource* _pVBufferUploadHeap);
   bool CreateDepthBuffer(LWindow& _window);
+
+	//GPU Comms
+	bool CreateConstantBuffer();
 
 	//-------
 
