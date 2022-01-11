@@ -488,7 +488,8 @@ bool Graphics::CreateInputLayout()
 	// how to read the vertex data bound to it.
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
 	{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	// fill out an input layout description structure
@@ -636,16 +637,16 @@ bool Graphics::CreatePSO(PSOData& _psoData)
 	Vertex vList[] = 
 {
 			// first triangle
-			{ {-0.5f,  0.5f, 0.5f} }, // top left
-			{ { 0.5f, -0.5f, 0.5f } }, // bottom right
-			{ { - 0.5f, -0.5f, 0.5f}}, // bottom left
-			{ { 0.5f, 0.5f, 0.5f  }  },
+			Vertex({ -0.5f,  0.5f, 0.5f  }), // top left
+			Vertex({ 0.5f, -0.5f, 0.5f }), // bottom right
+			Vertex({ -0.5f, -0.5f, 0.5f }), // bottom left
+			Vertex({ 0.5f, 0.5f, 0.5f  }),
 
 			// second triangle
-				{ {-0.75f,  0.75f, 0.7f} }, // top left
-				{ { 0.0f, 0.0f, 0.7f } }, // bottom right
-				{ { -0.75f, 0.0f, 0.7f}}, // bottom left
-				{ { 0.0f, 0.75f, 0.7f  }  }
+			Vertex({-0.75f,  0.75f,  0.7f} ), // top left
+			Vertex({ 0.0f,  0.0f, 0.7f } ), // bottom right
+			Vertex({ -0.75f,  0.0f, 0.7f}), // bottom left
+			Vertex({  0.0f,  0.75f,  0.7f})
 	};
 
 	int vBufferSize = sizeof(vList);
@@ -719,78 +720,8 @@ bool Graphics::CreatePSO(PSOData& _psoData)
 bool Graphics::CreateVertexBuffer()
 {
 	// a triangle
-	Vertex vList[] = {
-			{ XMFLOAT3( 0.0f, 0.5f, 0.5f) },
-			{ XMFLOAT3(0.5f, -0.5f, 0.5f ) },
-			{ XMFLOAT3(-0.5f, -0.5f, 0.5f ) },
-	};
+	
 
-	int vBufferSize = sizeof(vList);
-
-	// create default heap
-	// default heap is memory on the GPU. Only the GPU has access to this memory
-	// To get data into this heap, we will have to upload the data using
-	// an upload heap
-	m_pDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-		D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
-																		// from the upload heap to this heap
-		nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-		IID_PPV_ARGS(&m_pVertexBuffer));
-
-	// we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
-	m_pVertexBuffer->SetName(L"Vertex Buffer Resource Heap");
-
-	// create upload heap
-	// upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
-	// We will upload the vertex buffer using this heap to the default heap
-	ID3D12Resource* vBufferUploadHeap;
-	m_pDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
-		nullptr,
-		IID_PPV_ARGS(&vBufferUploadHeap));
-	vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
-
-	// store vertex buffer in upload heap
-	D3D12_SUBRESOURCE_DATA vertexData = {};
-	vertexData.pData = reinterpret_cast<BYTE*>(vList); // pointer to our vertex array
-	vertexData.RowPitch = vBufferSize; // size of all our triangle vertex data
-	vertexData.SlicePitch = vBufferSize; // also the size of our triangle vertex data
-
-	// we are now creating a command with the command list to copy the data from
-	// the upload heap to the default heap
-	UpdateSubresources(m_pCommandList, m_pVertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
-
-	if (!CreateIndexBuffer(vBufferSize, vBufferUploadHeap))
-		return false;
-
-	// transition the vertex buffer data from copy destination state to vertex buffer state
-	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-
-
-
-	// Now we execute the command list to upload the initial assets (triangle data)
-	m_pCommandList->Close();
-	ID3D12CommandList* ppCommandLists[] = { m_pCommandList };
-	m_pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-	// increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-	m_fenceValue[m_frameIndex]++;
-	HRESULT hr = m_pCommandQueue->Signal(m_pFence[m_frameIndex], m_fenceValue[m_frameIndex]);
-	if (FAILED(hr))
-	{
-		return false;//m_status = Status::sERRORED;
-	}
-
-	// create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
-	m_vertexBufferView.BufferLocation = m_pVertexBuffer->GetGPUVirtualAddress();
-	m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-	m_vertexBufferView.SizeInBytes = vBufferSize;
 	return true;
 }
 
@@ -880,5 +811,51 @@ bool Graphics::CreateDepthBuffer(LWindow& _window)
 	m_pDevice->CreateDepthStencilView(m_pDepthStencilBuffer, &depthStencilDesc, m_pDSDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	return true;
+}
+
+bool Graphics::CreateConstantBuffer()
+{
+	
+	ID3D12DescriptorHeap* mainDescriptorHeap[m_frameBufferCount]; // this heap will store the descripor to our constant buffer
+	ID3D12Resource* constantBufferUploadHeap[m_frameBufferCount]; // this is the memory on the gpu where our constant buffer will be placed.
+
+	ConstantBuffer cbColorMultiplierData; // this is the constant buffer data we will send to the gpu 
+																					// (which will be placed in the resource we created above)
+
+	UINT8* cbColorMultiplierGPUAddress[m_frameBufferCount]; // this is a pointer to the memory location we get when we map our constant buffer
+
+	
+	// create a descriptor range(descriptor table) and fill it out
+		// this is a range of descriptors inside a descriptor heap
+	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
+	ZeroMemory(descriptorTableRanges, sizeof(descriptorTableRanges));
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV; // this is a range of constant buffer views (descriptors)
+	descriptorTableRanges[0].NumDescriptors = 1; // we only have one constant buffer, so the range is only 1
+	descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range
+	descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
+	
+	// create a descriptor table
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array	
+
+	// create a root parameter and fill it out
+	D3D12_ROOT_PARAMETER  rootParameters[1]; // only one parameter right now
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
+	rootParameters[0].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+
+	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	rootSignatureDesc.Init(_countof(rootParameters), // we have 1 root parameter
+		rootParameters, // a pointer to the beginning of our root parameters array
+		0,
+		nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
+return true;
 }
 
