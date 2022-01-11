@@ -77,6 +77,7 @@ private:
 	bool CreatePSO(PSOData& _psoData);
 	bool CreateVertexBuffer();
 	bool CreateIndexBuffer(int _vBufferSize, ID3D12Resource* _pVBufferUploadHeap);
+  bool CreateDepthBuffer(LWindow& _window);
 
 	//-------
 
@@ -127,6 +128,9 @@ private:
 
 	ID3D12Resource* m_pIndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView; 
+
+	ID3D12Resource* m_pDepthStencilBuffer; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
+	ID3D12DescriptorHeap* m_pDSDescriptorHeap; // This is a heap for our depth/stencil buffer descriptor
 	
 };
 
