@@ -1,7 +1,6 @@
 #include "Scene.h"
 
-unsigned int Scene::m_width = 0;
-unsigned int Scene::m_height = 0;
+
 Scene::Scene(unsigned int _width, unsigned int _height, std::string _name) : D12Core(_width, _height, _name)
 {
   
@@ -19,13 +18,13 @@ Scene::~Scene()
 bool Scene::onInit(LWindow* _window)
 {
   bool result = true;
-  result = m_pGraphics->OnInit(*_window);
+  result = m_pGraphics->InitD3D(_window->getWidth(), _window->getHeight(), _window->getWindow());
   return result;
 }
 
 bool Scene::onUpdate()
 {
-  m_pGraphics->Update();
+  m_pGraphics->Update22222();
   return true;
 }
 
@@ -57,7 +56,7 @@ bool Scene::onRender()
   {
     return false;
   }*/
-  m_pGraphics->Render();
+  m_pGraphics->Render22222();
 
   return true;
 }
