@@ -23,20 +23,20 @@ bool Graphics::OnInit(LWindow &_window)
 	m_scissorRect.right = _window.getWidth();
 	m_scissorRect.bottom = _window.getHeight();
 
-	bool setup = true; //InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets() && InitCommandAllocators() && InitCommandList() && InitFence();
+	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets() && InitCommandAllocators() && InitCommandList() && InitFence();
 
-	//setup = InitRootSignature();
+	setup = InitRootSignature();
 
 	//setup = InitRootSignature() && CompileMyShaders() && CreateInputLayout()   CreateConstantBuffer();
 	if (setup)
 	{
-		//setup = CreateDepthBuffer(_window);
-		//setup = CreatePerObjectConstantBuffer();
-		//setup = CreatePSO(m_psoData);
-		setup = Test(_window.getWidth(), _window.getHeight(), _window.getWindow());
+		setup = CreateDepthBuffer(_window);
+		setup = CreatePerObjectConstantBuffer();
+		setup = CreatePSO(m_psoData);
+		//setup = Test(_window.getWidth(), _window.getHeight(), _window.getWindow());
 		
 		// Now we execute the command list to upload the initial assets (triangle data)
-		/*m_pCommandList->Close();
+		m_pCommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { m_pCommandList };
 		m_pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 		// increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
@@ -45,9 +45,9 @@ bool Graphics::OnInit(LWindow &_window)
 		if (FAILED(hr))
 		{
 			return false;
-		}*/
+		}
 	}
-	//setup = InitScene(_window.getWidth(), _window.getHeight());
+	setup = InitScene(_window.getWidth(), _window.getHeight());
 		
 
 
