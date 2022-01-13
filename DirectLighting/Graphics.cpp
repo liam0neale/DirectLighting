@@ -25,13 +25,35 @@ bool Graphics::OnInit(LWindow &_window)
 
 	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets() && InitCommandAllocators() && InitCommandList() && InitFence();
 
-	setup = InitRootSignature() && CompileMyShaders() && CreateInputLayout();
+	setup = /*InitRootSignature() && CompileMyShaders() && CreateInputLayout() */  CreateConstantBuffer();
 	if (setup)
 	{
 		setup = CreateDepthBuffer(_window);
+		setup = CreateConsantBufferDescriptorHeap();
+		//setup = CreateConstantBuffer();
 		setup = CreatePSO(m_psoData);
+
+
+		// Now we execute the command list to upload the initial assets (triangle data)
+		m_pCommandList->Close();
+		ID3D12CommandList* ppCommandLists[] = { m_pCommandList };
+		m_pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+		// increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
+		m_fenceValue[m_frameIndex]++;
+		hr = m_pCommandQueue->Signal(m_pFence[m_frameIndex], m_fenceValue[m_frameIndex]);
+		if (FAILED(hr))
+		{
+			return false;
+		}
 	}
 	return setup;
+}
+
+void Graphics::Update()
+{
+	m_cbColorMultiplierData.colorMultiplier = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
+	// copy our ConstantBuffer instance to the mapped constant buffer resource
+	memcpy(m_pCBColorMultiplierGPUAddress[m_frameIndex], &m_cbColorMultiplierData, sizeof(m_cbColorMultiplierData));
 }
 
 void Graphics::UpdatePipeline()
@@ -86,6 +108,13 @@ void Graphics::UpdatePipeline()
 
 	// draw triangle
 	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature); // set the root signature
+
+	// set constant buffer descriptor heap
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_pMainDescriptorHeap[m_frameIndex] };
+  m_pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	// set the root descriptor table 0 to the constant buffer descriptor heap
+	m_pCommandList->SetGraphicsRootDescriptorTable(0, m_pMainDescriptorHeap[m_frameIndex]->GetGPUDescriptorHandleForHeapStart());
 
 	m_pCommandList->RSSetViewports(1, &m_viewport); // set the viewports
 	m_pCommandList->RSSetScissorRects(1, &m_scissorRect); // set the scissor rects
@@ -509,21 +538,7 @@ bool Graphics::CreatePSO(PSOData& _psoData)
 
 	// create root signature
 	HRESULT hr;
-	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	ID3DBlob* signature;
-	hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
-	if (FAILED(hr))
-	{
-		return false;
-	}
-
-	hr = m_pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_pRootSignature));
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	//CreateConstantBuffer();
 
 	// create vertex and pixel shaders
 
@@ -697,14 +712,10 @@ bool Graphics::CreatePSO(PSOData& _psoData)
 	// transition the vertex buffer data from copy destination state to vertex buffer state
 	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
-	// Now we execute the command list to upload the initial assets (triangle data)
-	m_pCommandList->Close();
-	ID3D12CommandList* ppCommandLists[] = { m_pCommandList };
-	m_pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-	m_fenceValue[m_frameIndex]++;
-	hr = m_pCommandQueue->Signal(m_pFence[m_frameIndex], m_fenceValue[m_frameIndex]);
+	//m_fenceValue[m_frameIndex]++;
+	//hr = m_pCommandQueue->Signal(m_pFence[m_frameIndex], m_fenceValue[m_frameIndex]);
 	if (FAILED(hr))
 	{
 		//Running = false;
@@ -815,16 +826,6 @@ bool Graphics::CreateDepthBuffer(LWindow& _window)
 
 bool Graphics::CreateConstantBuffer()
 {
-	
-	ID3D12DescriptorHeap* mainDescriptorHeap[m_frameBufferCount]; // this heap will store the descripor to our constant buffer
-	ID3D12Resource* constantBufferUploadHeap[m_frameBufferCount]; // this is the memory on the gpu where our constant buffer will be placed.
-
-	ConstantBuffer cbColorMultiplierData; // this is the constant buffer data we will send to the gpu 
-																					// (which will be placed in the resource we created above)
-
-	UINT8* cbColorMultiplierGPUAddress[m_frameBufferCount]; // this is a pointer to the memory location we get when we map our constant buffer
-
-	
 	// create a descriptor range(descriptor table) and fill it out
 		// this is a range of descriptors inside a descriptor heap
 	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
@@ -856,6 +857,70 @@ bool Graphics::CreateConstantBuffer()
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
-return true;
+
+	ID3DBlob* signature;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	hr = m_pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_pRootSignature));
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool Graphics::CreateConsantBufferDescriptorHeap()
+{
+	// Create a constant buffer descriptor heap for each frame
+	// this is the descriptor heap that will store our constant buffer descriptor
+	for (int i = 0; i < m_frameBufferCount; ++i)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+		heapDesc.NumDescriptors = 1;
+		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		HRESULT hr = m_pDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_pMainDescriptorHeap[i]));
+		if (FAILED(hr))
+		{
+			return false;
+		}
+	}
+
+	// create the constant buffer resource heap
+		// We will update the constant buffer one or more times per frame, so we will use only an upload heap
+		// unlike previously we used an upload heap to upload the vertex and index data, and then copied over
+		// to a default heap. If you plan to use a resource for more than a couple frames, it is usually more
+		// efficient to copy to a default heap where it stays on the gpu. In this case, our constant buffer
+		// will be modified and uploaded at least once per frame, so we only use an upload heap
+
+		// create a resource heap, descriptor heap, and pointer to cbv for each frame
+	for (int i = 0; i < m_frameBufferCount; ++i)
+	{
+		HRESULT hr = m_pDevice->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
+			D3D12_HEAP_FLAG_NONE, // no flags
+			&CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), // size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
+			D3D12_RESOURCE_STATE_GENERIC_READ, // will be data that is read from so we keep it in the generic read state
+			nullptr, // we do not have use an optimized clear value for constant buffers
+			IID_PPV_ARGS(&m_pConstantBufferUploadHeap[i]));
+		m_pConstantBufferUploadHeap[i]->SetName(L"Constant Buffer Upload Resource Heap");
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+		cbvDesc.BufferLocation = m_pConstantBufferUploadHeap[i]->GetGPUVirtualAddress();
+		cbvDesc.SizeInBytes = (sizeof(ConstantBuffer) + 255) & ~255;    // CB size is required to be 256-byte aligned.
+		m_pDevice->CreateConstantBufferView(&cbvDesc, m_pMainDescriptorHeap[i]->GetCPUDescriptorHandleForHeapStart());
+
+		ZeroMemory(&m_cbColorMultiplierData, sizeof(m_cbColorMultiplierData));
+		
+		CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (End is less than or equal to begin)
+		hr = m_pConstantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&m_pCBColorMultiplierGPUAddress[i]));
+		memcpy(m_pCBColorMultiplierGPUAddress[i], &m_cbColorMultiplierData, sizeof(m_cbColorMultiplierData));	
+	}
+	return true;
 }
 

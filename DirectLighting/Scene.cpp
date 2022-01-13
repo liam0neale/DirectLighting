@@ -25,6 +25,7 @@ bool Scene::onInit(LWindow* _window)
 
 bool Scene::onUpdate()
 {
+  m_pGraphics->Update();
   return true;
 }
 

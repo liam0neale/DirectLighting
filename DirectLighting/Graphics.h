@@ -40,7 +40,8 @@ struct Vertex
 	XMFLOAT3 pos;
 	//XMFLOAT4 col;
 };
-struct ConstantBuffer {
+struct ConstantBuffer 
+{
 	XMFLOAT4 colorMultiplier;
 };
 class Graphics
@@ -51,6 +52,7 @@ public:
 
 	bool OnInit(LWindow& _window);
 
+	void Update();
 	void UpdatePipeline();
 	void Render();
 	void WaitForPreviousFrame();
@@ -90,6 +92,7 @@ private:
 
 	//GPU Comms
 	bool CreateConstantBuffer();
+	bool CreateConsantBufferDescriptorHeap();
 
 	//-------
 
@@ -144,5 +147,12 @@ private:
 	ID3D12Resource* m_pDepthStencilBuffer; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
 	ID3D12DescriptorHeap* m_pDSDescriptorHeap; // This is a heap for our depth/stencil buffer descriptor
 	
+	ID3D12DescriptorHeap* m_pMainDescriptorHeap[m_frameBufferCount]; // this heap will store the descripor to our constant buffer
+	ID3D12Resource* m_pConstantBufferUploadHeap[m_frameBufferCount]; // this is the memory on the gpu where our constant buffer will be placed.
+	ConstantBuffer m_cbColorMultiplierData; // this is the constant buffer data we will send to the gpu 
+																				// (which will be placed in the resource we created above)
+	UINT8* m_pCBColorMultiplierGPUAddress[m_frameBufferCount]; // this is a pointer to the memory location we get when we map our constant buffer
+
+
 };
 
