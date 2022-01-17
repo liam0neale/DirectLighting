@@ -16,9 +16,11 @@
 #include <DirectXMath.h>
 #include <dxgi.h>
 #include <d3dcompiler.h>
+#include <wincodec.h>
 
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3dcompiler")
+
 
 
 #include "D3dx12.h"
@@ -26,20 +28,20 @@
 
 #include "GraphicsData.h"
 
-
 //using namespace GData;
 using namespace DirectX;
 using namespace Microsoft::WRL;
 struct Vertex
 {
-	Vertex(XMFLOAT3 _pos, XMFLOAT4 _col)
+	Vertex(XMFLOAT3 _pos, XMFLOAT2 _texCoord)
 	{
-		col = _col;
+		texCoord = _texCoord;
 		pos = _pos;
 	}
 	XMFLOAT3 pos;
-	XMFLOAT4 col;
+	XMFLOAT2 texCoord;
 };
+
 // this is the structure of our constant buffer.
 struct ConstantBufferPerObject 
 {
@@ -174,5 +176,19 @@ private:
 	XMFLOAT4 m_cube2PositionOffset; // our second cube will rotate around the first cube, so this is the position offset from the first cube
 
 	int m_numCubeIndices; // the number of indices to draw the cube
+
+	//Texture
+	bool CreateTexture();
+	ID3D12Resource* textureBuffer; // the resource heap containing our texture
+
+	int LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resourceDescription, LPCWSTR filename, int& bytesPerRow);
+
+	DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
+	WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);
+	int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat);
+
+	ID3D12DescriptorHeap* mainDescriptorHeap;
+	ID3D12Resource* textureBufferUploadHeap;
+
 };
 
