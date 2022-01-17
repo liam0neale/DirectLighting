@@ -513,6 +513,7 @@ bool Graphics::InitFence()
 
 bool Graphics::InitRootSignature()
 {
+	// create a root descriptor, which explains where to find the data for this root parameter
 	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
 	rootCBVDescriptor.RegisterSpace = 0;
 	rootCBVDescriptor.ShaderRegister = 0;
@@ -531,7 +532,7 @@ bool Graphics::InitRootSignature()
 	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
 	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
 
-	// create a root parameter and fill it out
+	// create a root parameter for the root descriptor and fill it out
 	D3D12_ROOT_PARAMETER  rootParameters[2]; // only one parameter right now
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
 	rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
@@ -560,19 +561,21 @@ bool Graphics::InitRootSignature()
 	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init(_countof(rootParameters), // we have 1 root parameter
+	rootSignatureDesc.Init(_countof(rootParameters), // we have 2 root parameters
 		rootParameters, // a pointer to the beginning of our root parameters array
-		0,
-		&sampler,
+		1, // we have one static sampler
+		&sampler, // a pointer to our static sampler (array)
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS );
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
 
+	ID3DBlob* errorBuff; // a buffer holding the error data if any
 	ID3DBlob* signature;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr);
+	HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &errorBuff);
 	if (FAILED(hr))
 	{
+		OutputDebugStringA((char*)errorBuff->GetBufferPointer());
 		return false;
 	}
 
@@ -581,89 +584,6 @@ bool Graphics::InitRootSignature()
 	{
 		return false;
 	}
-	return true;
-}
-
-bool Graphics::CompileMyShaders()
-{
-	// when debugging, we can compile the shader files at runtime.
-	// but for release versions, we can compile the hlsl shaders
-	// with fxc.exe to create .cso files, which contain the shader
-	// bytecode. We can load the .cso files at runtime to get the
-	// shader bytecode, which of course is faster than compiling
-	// them at runtime
-	
-	// compile vertex shader
-	HRESULT hr;
-	ID3DBlob* vertexShader; // d3d blob for holding vertex shader bytecode
-	ID3DBlob* errorBuff; // a buffer holding the error data if any
-	
-	hr = D3DCompileFromFile(L"VertexShader.hlsl",
-		nullptr,
-		nullptr,
-		"main",
-		"vs_5_0",
-		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
-		0,
-		&vertexShader,
-		&errorBuff);
-	if (FAILED(hr))
-	{
-		OutputDebugStringA((char*)errorBuff->GetBufferPointer());
-		return false;
-	}
-
-	// fill out a shader bytecode structure, which is basically just a pointer
-	// to the shader bytecode and the size of the shader bytecode
-	D3D12_SHADER_BYTECODE vertexShaderBytecode = {};
-	vertexShaderBytecode.BytecodeLength = vertexShader->GetBufferSize();
-	vertexShaderBytecode.pShaderBytecode = vertexShader->GetBufferPointer();
-
-	// compile pixel shader
-	ID3DBlob* pixelShader;
-	hr = D3DCompileFromFile(L"PixelShader.hlsl",
-		nullptr,
-		nullptr,
-		"main",
-		"ps_5_0",
-		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
-		0,
-		&pixelShader,
-		&errorBuff);
-	if (FAILED(hr))
-	{
-		OutputDebugStringA((char*)errorBuff->GetBufferPointer());
-		return false;
-	}
-
-	// fill out shader bytecode structure for pixel shader
-	D3D12_SHADER_BYTECODE pixelShaderBytecode = {};
-	pixelShaderBytecode.BytecodeLength = pixelShader->GetBufferSize();
-	pixelShaderBytecode.pShaderBytecode = pixelShader->GetBufferPointer();
-
-	m_psoData.vertexShaderBytecode = &vertexShaderBytecode;
-	m_psoData.pixelShaderBytecode = &pixelShaderBytecode;
-	return true;
-}
-
-bool Graphics::CreateInputLayout()
-{
-	// The input layout is used by the Input Assembler so that it knows
-	// how to read the vertex data bound to it.
-	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	// fill out an input layout description structure
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
-
-	// we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
-	inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-	inputLayoutDesc.pInputElementDescs = inputLayout;
-
-	m_psoData.inputLayoutDesc = &inputLayoutDesc;
 	return true;
 }
 
@@ -735,12 +655,12 @@ bool Graphics::CreatePSO(PSOData& _psoData)
 	// The input layout is used by the Input Assembler so that it knows
 	// how to read the vertex data bound to it.
 
+
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
-
 	// fill out an input layout description structure
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
 

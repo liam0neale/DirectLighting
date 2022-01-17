@@ -86,8 +86,6 @@ private:
 
 	//Drawing
 	bool InitRootSignature();
-	bool CompileMyShaders();
-	bool CreateInputLayout();
 	bool CreatePSO(PSOData& _psoData);
 	bool CreateVertexBuffer();
 	bool CreateIndexBuffer(int _vBufferSize, ID3D12Resource* _pVBufferUploadHeap);
