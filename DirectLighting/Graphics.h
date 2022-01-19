@@ -18,6 +18,13 @@
 #include <d3dcompiler.h>
 #include <wincodec.h>
 
+#include <vector>
+#include <array>
+#include <iostream>     // std::cout
+#include <fstream>      // std::ifstream
+#include <string>
+#include <sstream>
+#include "dxcapi.use.h"
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3dcompiler")
 
@@ -42,6 +49,75 @@ struct Vertex
 	XMFLOAT2 texCoord;
 };
 
+namespace GlobalRootSignatureParams 
+{
+	enum Value 
+	{
+		OutputViewSlot = 0,
+		AccelerationStructureSlot,
+		SceneConstantSlot,
+		VertexBuffersSlot,
+		Count
+	};
+}
+
+namespace LocalRootSignatureParams 
+{
+	enum Value 
+	{
+		CubeConstantSlot = 0,
+		Count
+	};
+}
+
+enum class RenderMode
+{
+	rmRAZTERISER,
+	rmRAY_TRACE
+};
+
+struct AccelerationStructureBuffers
+{
+	ID3D12Resource* pScratch;
+	ID3D12Resource* pResult;
+	ID3D12Resource* pInstanceDesc;    // Used only for top-level AS
+};
+struct DxilLibrary
+{
+	DxilLibrary(ID3DBlob* pBlob, const WCHAR* entryPoint[], uint32_t entryPointCount)
+	{
+		pShaderBlob = pBlob;
+		stateSubobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
+		stateSubobject.pDesc = &dxilLibDesc;
+
+		dxilLibDesc = {};
+		exportDesc.resize(entryPointCount);
+		exportName.resize(entryPointCount);
+		if (pBlob)
+		{
+			dxilLibDesc.DXILLibrary.pShaderBytecode = pBlob->GetBufferPointer();
+			dxilLibDesc.DXILLibrary.BytecodeLength = pBlob->GetBufferSize();
+			dxilLibDesc.NumExports = entryPointCount;
+			dxilLibDesc.pExports = exportDesc.data();
+
+			for (uint32_t i = 0; i < entryPointCount; i++)
+			{
+				exportName[i] = entryPoint[i];
+				exportDesc[i].Name = exportName[i].c_str();
+				exportDesc[i].Flags = D3D12_EXPORT_FLAG_NONE;
+				exportDesc[i].ExportToRename = nullptr;
+			}
+		}
+	};
+
+	DxilLibrary() : DxilLibrary(nullptr, nullptr, 0) {}
+
+	D3D12_DXIL_LIBRARY_DESC dxilLibDesc = {};
+	D3D12_STATE_SUBOBJECT stateSubobject{};
+	ID3DBlob* pShaderBlob;
+	std::vector<D3D12_EXPORT_DESC> exportDesc;
+	std::vector<std::wstring> exportName;
+};
 // this is the structure of our constant buffer.
 struct ConstantBufferPerObject 
 {
@@ -99,11 +175,12 @@ private:
 	//-------
 
 	//For Setting Up The Pipeline
+	RenderMode m_renderMode = RenderMode::rmRAZTERISER;
 	static const int m_frameBufferCount = 3; // number of buffers we want, 2 for double buffering, 3 for tripple buffering
 
 	IDXGIFactory4* dxgiFactory = nullptr;
 
-	ID3D12Device* m_pDevice = nullptr; // direct3d device
+	ID3D12Device5* m_pDevice = nullptr; // direct3d device
 
 	IDXGISwapChain3* m_pSwapChain = nullptr; // swapchain used to switch between render targets
 
@@ -115,7 +192,7 @@ private:
 
 	ID3D12CommandAllocator* m_pCommandAllocator[m_frameBufferCount]; // we want enough allocators for each buffer * number of threads (we only have one thread)
 
-	ID3D12GraphicsCommandList* m_pCommandList = nullptr; // a command list we can record commands into, then execute them to render the frame
+	ID3D12GraphicsCommandList4* m_pCommandList = nullptr; // a command list we can record commands into, then execute them to render the frame
 
 	ID3D12Fence* m_pFence[m_frameBufferCount];    // an object that is locked while our command list is being executed by the gpu. We need as many 
 																					 //as we have allocators (more if we want to know when the gpu is finished with an asset)
@@ -188,5 +265,32 @@ private:
 	ID3D12DescriptorHeap* mainDescriptorHeap;
 	ID3D12Resource* textureBufferUploadHeap;
 
+
+	//Raytracing
+	//ID3D12PipelineState* m_pRayTracePSO; // pso containing a pipeline state
+	//ID3D12RootSignature* m_pGlobalRayTraceRootSigniture;
+	//ID3D12RootSignature* m_pLocalRayTraceRootSigniture;
+
+	bool InitRayRootSigniture();
+	bool InitRayTracePSO();
+
+	bool CreateAcceleratedStructures(int _width);
+	AccelerationStructureBuffers CreateBottomLevel();
+	AccelerationStructureBuffers CreateTopLevel();
+	ID3D12Resource* createBuffer(ID3D12Device5* _pDevice, uint64_t _width, D3D12_RESOURCE_FLAGS _flags, D3D12_RESOURCE_STATES _initState, const D3D12_HEAP_PROPERTIES& _heapProps);
+
+	ID3D12Resource* m_pRayTraceVertexBuffer;
+	ID3D12Resource* m_pTopLevelAS;
+	ID3D12Resource* m_pBottomLevelAS;
+	uint64_t m_TlasSize = 0;
+
+	void createRtPipelineState();
+	DxilLibrary createDxilLibrary();
+	IDxcBlob* compileLibrary(const WCHAR* filename, const WCHAR* targetString);
+	std::string convertBlobToString(ID3DBlob* pBlob);
+	ID3D12StateObject* m_pRayTracePSO;
+	ID3D12RootSignature* m_pEmptyRootSig;
+	
+	
 };
 

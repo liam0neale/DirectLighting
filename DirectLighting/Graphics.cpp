@@ -1,4 +1,21 @@
 #include "Graphics.h"
+D3D12_HEAP_PROPERTIES kDefaultHeapProps =
+{
+		D3D12_HEAP_TYPE_DEFAULT,
+		D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+		D3D12_MEMORY_POOL_UNKNOWN,
+		0,
+		0
+};
+D3D12_HEAP_PROPERTIES kUploadHeapProps =
+{
+		D3D12_HEAP_TYPE_UPLOAD,
+		D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+		D3D12_MEMORY_POOL_UNKNOWN,
+		0,
+		0,
+};
+static dxc::DxcDllSupport gDxcDllHelper;
 
 bool Graphics::OnInit(LWindow &_window)
 {
@@ -25,17 +42,29 @@ bool Graphics::OnInit(LWindow &_window)
 
 	bool setup = InitDevice() && InitCommandQueue() && InitSwapchain(_window) && InitRenderTargets() && InitCommandAllocators() && InitCommandList() && InitFence();
 
-	setup = InitRootSignature();
+	
 
+	switch (m_renderMode)
+	{
+		case RenderMode::rmRAZTERISER:
+		{
+			setup = InitRootSignature();
+			setup = CreateDepthBuffer(_window);
+			setup = CreatePerObjectConstantBuffer();
+
+			setup = CreatePSO(m_psoData);
+			//setup = Test(_window.getWidth(), _window.getHeight(), _window.getWindow());
+			setup = CreateTexture();
+		}break;
+		case RenderMode::rmRAY_TRACE:
+		{
+			CreateAcceleratedStructures(_window.getWidth());
+		}break;
+	}
 	//setup = InitRootSignature() && CompileMyShaders() && CreateInputLayout()   CreateConstantBuffer();
 	if (setup)
 	{
-		setup = CreateDepthBuffer(_window);
-		setup = CreatePerObjectConstantBuffer();
-	
-		setup = CreatePSO(m_psoData);
-		//setup = Test(_window.getWidth(), _window.getHeight(), _window.getWindow());
-		setup = CreateTexture();
+		
 		// Now we execute the command list to upload the initial assets (triangle data)
 		m_pCommandList->Close();
 		ID3D12CommandList* ppCommandLists[] = { m_pCommandList };
@@ -57,69 +86,80 @@ bool Graphics::OnInit(LWindow &_window)
 
 void Graphics::Update()
 {
-    // update app logic, such as moving the camera or figuring out what objects are in view
+	switch (m_renderMode)
+	{
+		case RenderMode::rmRAZTERISER:
+		{
+			// update app logic, such as moving the camera or figuring out what objects are in view
 
-    // create rotation matrices
-    XMMATRIX rotXMat = XMMatrixRotationX(0.0001f);
-    XMMATRIX rotYMat = XMMatrixRotationY(0.0002f);
-    XMMATRIX rotZMat = XMMatrixRotationZ(0.0003f);
+		// create rotation matrices
+			XMMATRIX rotXMat = XMMatrixRotationX(0.0001f);
+			XMMATRIX rotYMat = XMMatrixRotationY(0.0002f);
+			XMMATRIX rotZMat = XMMatrixRotationZ(0.0003f);
 
-    // add rotation to cube1's rotation matrix and store it
-    XMMATRIX rotMat = XMLoadFloat4x4(&m_cube1RotMat) * rotXMat * rotYMat * rotZMat;
-    XMStoreFloat4x4(&m_cube1RotMat, rotMat);
+			// add rotation to cube1's rotation matrix and store it
+			XMMATRIX rotMat = XMLoadFloat4x4(&m_cube1RotMat) * rotXMat * rotYMat * rotZMat;
+			XMStoreFloat4x4(&m_cube1RotMat, rotMat);
 
-    // create translation matrix for cube 1 from cube 1's position vector
-    XMMATRIX translationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&m_cube1Position));
+			// create translation matrix for cube 1 from cube 1's position vector
+			XMMATRIX translationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&m_cube1Position));
 
-    // create cube1's world matrix by first rotating the cube, then positioning the rotated cube
-    XMMATRIX worldMat = rotMat * translationMat;
+			// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
+			XMMATRIX worldMat = rotMat * translationMat;
 
-    // store cube1's world matrix
-    XMStoreFloat4x4(&m_cube1WorldMat, worldMat);
+			// store cube1's world matrix
+			XMStoreFloat4x4(&m_cube1WorldMat, worldMat);
 
-    // update constant buffer for cube1
-    // create the wvp matrix and store in constant buffer
-    XMMATRIX viewMat = XMLoadFloat4x4(&m_cameraViewMat); // load view matrix
-    XMMATRIX projMat = XMLoadFloat4x4(&m_cameraProjMat); // load projection matrix
-    XMMATRIX wvpMat = XMLoadFloat4x4(&m_cube1WorldMat) * viewMat * projMat; // create wvp matrix
-    XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
-    XMStoreFloat4x4(&m_cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
+			// update constant buffer for cube1
+			// create the wvp matrix and store in constant buffer
+			XMMATRIX viewMat = XMLoadFloat4x4(&m_cameraViewMat); // load view matrix
+			XMMATRIX projMat = XMLoadFloat4x4(&m_cameraProjMat); // load projection matrix
+			XMMATRIX wvpMat = XMLoadFloat4x4(&m_cube1WorldMat) * viewMat * projMat; // create wvp matrix
+			XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
+			XMStoreFloat4x4(&m_cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
 
-    // copy our ConstantBuffer instance to the mapped constant buffer resource
-    memcpy(m_pCBVGPUAddress[m_frameIndex], &m_cbPerObject, sizeof(m_cbPerObject));
+			// copy our ConstantBuffer instance to the mapped constant buffer resource
+			memcpy(m_pCBVGPUAddress[m_frameIndex], &m_cbPerObject, sizeof(m_cbPerObject));
 
-    // now do cube2's world matrix
-    // create rotation matrices for cube2
-    rotXMat = XMMatrixRotationX(0.0003f);
-    rotYMat = XMMatrixRotationY(0.0002f);
-    rotZMat = XMMatrixRotationZ(0.0001f);
+			// now do cube2's world matrix
+			// create rotation matrices for cube2
+			rotXMat = XMMatrixRotationX(0.0003f);
+			rotYMat = XMMatrixRotationY(0.0002f);
+			rotZMat = XMMatrixRotationZ(0.0001f);
 
-    // add rotation to cube2's rotation matrix and store it
-    rotMat = rotZMat * (XMLoadFloat4x4(&m_cube2RotMat) * (rotXMat * rotYMat));
-    XMStoreFloat4x4(&m_cube2RotMat, rotMat);
+			// add rotation to cube2's rotation matrix and store it
+			rotMat = rotZMat * (XMLoadFloat4x4(&m_cube2RotMat) * (rotXMat * rotYMat));
+			XMStoreFloat4x4(&m_cube2RotMat, rotMat);
 
-    // create translation matrix for cube 2 to offset it from cube 1 (its position relative to cube1
-    XMMATRIX translationOffsetMat = XMMatrixTranslationFromVector(XMLoadFloat4(&m_cube2PositionOffset));
+			// create translation matrix for cube 2 to offset it from cube 1 (its position relative to cube1
+			XMMATRIX translationOffsetMat = XMMatrixTranslationFromVector(XMLoadFloat4(&m_cube2PositionOffset));
 
-    // we want cube 2 to be half the size of cube 1, so we scale it by .5 in all dimensions
-    XMMATRIX scaleMat = XMMatrixScaling(0.5f, 0.5f, 0.5f);
+			// we want cube 2 to be half the size of cube 1, so we scale it by .5 in all dimensions
+			XMMATRIX scaleMat = XMMatrixScaling(0.5f, 0.5f, 0.5f);
 
-    // reuse worldMat. 
-    // first we scale cube2. scaling happens relative to point 0,0,0, so you will almost always want to scale first
-    // then we translate it. 
-    // then we rotate it. rotation always rotates around point 0,0,0
-    // finally we move it to cube 1's position, which will cause it to rotate around cube 1
-    worldMat = scaleMat * translationOffsetMat * rotMat * translationMat;
+			// reuse worldMat. 
+			// first we scale cube2. scaling happens relative to point 0,0,0, so you will almost always want to scale first
+			// then we translate it. 
+			// then we rotate it. rotation always rotates around point 0,0,0
+			// finally we move it to cube 1's position, which will cause it to rotate around cube 1
+			worldMat = scaleMat * translationOffsetMat * rotMat * translationMat;
 
-    wvpMat = XMLoadFloat4x4(&m_cube2WorldMat) * viewMat * projMat; // create wvp matrix
-    transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
-    XMStoreFloat4x4(&m_cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
+			wvpMat = XMLoadFloat4x4(&m_cube2WorldMat) * viewMat * projMat; // create wvp matrix
+			transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
+			XMStoreFloat4x4(&m_cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
 
-    // copy our ConstantBuffer instance to the mapped constant buffer resource
-    memcpy(m_pCBVGPUAddress[m_frameIndex] + m_ConstantBufferPerObjectAlignedSize, &m_cbPerObject, sizeof(m_cbPerObject));
+			// copy our ConstantBuffer instance to the mapped constant buffer resource
+			memcpy(m_pCBVGPUAddress[m_frameIndex] + m_ConstantBufferPerObjectAlignedSize, &m_cbPerObject, sizeof(m_cbPerObject));
 
-    // store cube2's world matrix
-    XMStoreFloat4x4(&m_cube2WorldMat, worldMat);
+			// store cube2's world matrix
+			XMStoreFloat4x4(&m_cube2WorldMat, worldMat);
+		}break;
+		case RenderMode::rmRAY_TRACE:
+		{
+
+		}break;
+	}
+    
 }
 
 void Graphics::UpdatePipeline()
@@ -159,55 +199,78 @@ void Graphics::UpdatePipeline()
 	m_pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pRenderTargets[m_frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 
 	// get a handle to the depth/stencil buffer
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_pDSDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	if (m_pDSDescriptorHeap)
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_pDSDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		m_pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+	}
+	else
+	{
+		m_pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	}
+		
 
 	// set the render target for the output merger stage (the output of the pipeline)
-	m_pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+	
 
-	// Clear the render target by using the ClearRenderTargetView command
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	m_pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	switch (m_renderMode)
+	{
+		case RenderMode::rmRAZTERISER:
+		{
+			// Clear the render target by using the ClearRenderTargetView command
+			const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+			m_pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
-	// clear the depth/stencil buffer
-	m_pCommandList->ClearDepthStencilView(m_pDSDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+			// clear the depth/stencil buffer
+			m_pCommandList->ClearDepthStencilView(m_pDSDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	// set root signature
-	m_pCommandList->SetGraphicsRootSignature(m_pRootSignature); // set the root signature
+			// set root signature
+			m_pCommandList->SetGraphicsRootSignature(m_pRootSignature); // set the root signature
 
-	// set the descriptor heap
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap };
-	m_pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+			// set the descriptor heap
+			ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap };
+			m_pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	// set the descriptor table to the descriptor heap (parameter 1, as constant buffer root descriptor is parameter index 0)
-	m_pCommandList->SetGraphicsRootDescriptorTable(1, mainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+			// set the descriptor table to the descriptor heap (parameter 1, as constant buffer root descriptor is parameter index 0)
+			m_pCommandList->SetGraphicsRootDescriptorTable(1, mainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-	// draw triangle
-	m_pCommandList->RSSetViewports(1, &m_viewport); // set the viewports
-	m_pCommandList->RSSetScissorRects(1, &m_scissorRect); // set the scissor rects
-	m_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
-	m_pCommandList->IASetVertexBuffers(0, 1, &m_vertexBufferView); // set the vertex buffer (using the vertex buffer view)
-	m_pCommandList->IASetIndexBuffer(&m_indexBufferView);
+			// draw triangle
+			m_pCommandList->RSSetViewports(1, &m_viewport); // set the viewports
+			m_pCommandList->RSSetScissorRects(1, &m_scissorRect); // set the scissor rects
+			m_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
+			m_pCommandList->IASetVertexBuffers(0, 1, &m_vertexBufferView); // set the vertex buffer (using the vertex buffer view)
+			m_pCommandList->IASetIndexBuffer(&m_indexBufferView);
 
-	// first cube
+			// first cube
 
-	// set cube1's constant buffer
-	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_pConstantBufferUploadHeaps[m_frameIndex]->GetGPUVirtualAddress());
+			// set cube1's constant buffer
+			m_pCommandList->SetGraphicsRootConstantBufferView(0, m_pConstantBufferUploadHeaps[m_frameIndex]->GetGPUVirtualAddress());
 
-	// draw first cube
-	m_pCommandList->DrawIndexedInstanced(m_numCubeIndices, 1, 0, 0, 0);
+			// draw first cube
+			m_pCommandList->DrawIndexedInstanced(m_numCubeIndices, 1, 0, 0, 0);
 
-	// second cube
+			// second cube
 
-	// set cube2's constant buffer. You can see we are adding the size of ConstantBufferPerObject to the constant buffer
-	// resource heaps address. This is because cube1's constant buffer is stored at the beginning of the resource heap, while
-	// cube2's constant buffer data is stored after (256 bits from the start of the heap).
-	m_pCommandList->SetGraphicsRootConstantBufferView(0, m_pConstantBufferUploadHeaps[m_frameIndex]->GetGPUVirtualAddress() + m_ConstantBufferPerObjectAlignedSize);
+			// set cube2's constant buffer. You can see we are adding the size of ConstantBufferPerObject to the constant buffer
+			// resource heaps address. This is because cube1's constant buffer is stored at the beginning of the resource heap, while
+			// cube2's constant buffer data is stored after (256 bits from the start of the heap).
+			m_pCommandList->SetGraphicsRootConstantBufferView(0, m_pConstantBufferUploadHeaps[m_frameIndex]->GetGPUVirtualAddress() + m_ConstantBufferPerObjectAlignedSize);
 
-	// draw second cube
-	m_pCommandList->DrawIndexedInstanced(m_numCubeIndices, 1, 0, 0, 0);
+			// draw second cube
+			m_pCommandList->DrawIndexedInstanced(m_numCubeIndices, 1, 0, 0, 0);
+		}break;
+		case RenderMode::rmRAY_TRACE:
+		{
+			// Clear the render target by using the ClearRenderTargetView command
+			const float clearColor[] = { 0.0f, 0.65f, 0.4f, 1.0f };
+			m_pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		}break;
+	}
+
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
 	// warning if present is called on the render target when it's not in the present state
@@ -330,8 +393,12 @@ bool Graphics::InitDevice()
 		
 		// we want a device that is compatible with direct3d 12 
 		// NOTE: call the create device with nullptr in last param to check if this hardware adpater supports directx12
-		hr = D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr);
-		if (SUCCEEDED(hr))
+		ID3D12Device* pDevice;
+		hr = D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&pDevice));
+
+		D3D12_FEATURE_DATA_D3D12_OPTIONS5 features5 = {};
+		HRESULT hr = pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &features5, sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS5));
+		if (SUCCEEDED(hr) && features5.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED)
 		{
 			adapterFound = true;
 			break;
@@ -347,7 +414,7 @@ bool Graphics::InitDevice()
 	// Create the device
 	hr = D3D12CreateDevice(
 		adapter,
-		D3D_FEATURE_LEVEL_11_0,
+		D3D_FEATURE_LEVEL_12_0,
 		IID_PPV_ARGS(&m_pDevice)
 	);
 
@@ -1643,7 +1710,7 @@ bool Graphics::CreateTexture()
 	BYTE* imageData;
 	D3D12_RESOURCE_DESC textureDesc;
 	int imageBytesPerRow;
-	int imageSize = LoadImageDataFromFile(&imageData, textureDesc, L"braynzar.jpg", imageBytesPerRow);
+	int imageSize = LoadImageDataFromFile(&imageData, textureDesc, L"JellyFishDev.png", imageBytesPerRow);
 
 	// make sure we have data
 	if (imageSize <= 0)
@@ -1918,4 +1985,277 @@ int Graphics::GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat)
 	else if (dxgiFormat == DXGI_FORMAT_R16_UNORM) return 16;
 	else if (dxgiFormat == DXGI_FORMAT_R8_UNORM) return 8;
 	else if (dxgiFormat == DXGI_FORMAT_A8_UNORM) return 8;
+}
+
+bool Graphics::InitRayRootSigniture()
+{
+	CD3DX12_DESCRIPTOR_RANGE ranges[2]; // Perfomance TIP: Order from most frequent to least frequent.
+	ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);  // 1 output texture
+	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 1);  // 2 static index and vertex buffers.
+
+	CD3DX12_ROOT_PARAMETER rootParameters[GlobalRootSignatureParams::Count];
+	rootParameters[GlobalRootSignatureParams::OutputViewSlot].InitAsDescriptorTable(1, &ranges[0]);
+	rootParameters[GlobalRootSignatureParams::AccelerationStructureSlot].InitAsShaderResourceView(0);
+	rootParameters[GlobalRootSignatureParams::SceneConstantSlot].InitAsConstantBufferView(0);
+	rootParameters[GlobalRootSignatureParams::VertexBuffersSlot].InitAsDescriptorTable(1, &ranges[1]);
+	CD3DX12_ROOT_SIGNATURE_DESC globalRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
+
+
+	ComPtr<ID3DBlob> blob;
+	ComPtr<ID3DBlob> error;
+
+	HRESULT hr = D3D12SerializeRootSignature(&globalRootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error);
+	//hr = m_pDevice->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_pGlobalRayTraceRootSigniture));
+	//if (FAILED(hr))
+	//	return false;
+	/*
+	CD3DX12_ROOT_PARAMETER rootParameters[LocalRootSignatureParams::Count];
+	rootParameters[LocalRootSignatureParams::CubeConstantSlot].InitAsConstants(SizeOfInUint32(m_cubeCB), 1);
+	CD3DX12_ROOT_SIGNATURE_DESC localRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
+	localRootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
+
+
+	ComPtr<ID3DBlob> blob;
+	ComPtr<ID3DBlob> error;
+
+	HRESULT hr = D3D12SerializeRootSignature(&localRootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error);
+	HRESULT hr = m_pDevice->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_pLocalRayTraceRootSigniture));
+	if (FAILED(hr))
+		return false;*/
+
+	return true;
+}
+
+bool Graphics::InitRayTracePSO()
+{
+
+	return true;
+}
+
+bool Graphics::CreateAcceleratedStructures(int _width)
+{
+	//set up buffer
+	const XMFLOAT3 vertices[] =
+	{
+			XMFLOAT3(0,          1,  0),
+			XMFLOAT3(0.866f,  -0.5f, 0),
+			XMFLOAT3(-0.866f, -0.5f, 0)
+	};
+
+	m_pRayTraceVertexBuffer = createBuffer(m_pDevice, sizeof(vertices), D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, kUploadHeapProps);
+	uint8_t* pData;
+	m_pRayTraceVertexBuffer->Map(0, nullptr, (void**)&pData);
+	memcpy(pData, vertices, sizeof(vertices));
+	m_pRayTraceVertexBuffer->Unmap(0, nullptr);
+
+	//accerlertaion
+	AccelerationStructureBuffers bottomLevelBuffers = CreateBottomLevel();
+	m_pBottomLevelAS = bottomLevelBuffers.pResult;
+	AccelerationStructureBuffers topLevelBuffers = CreateTopLevel();
+	m_pTopLevelAS = topLevelBuffers.pResult;
+	
+	return true;
+}
+
+AccelerationStructureBuffers Graphics::CreateBottomLevel()
+{
+	D3D12_RAYTRACING_GEOMETRY_DESC geomDesc = {};
+	geomDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+	geomDesc.Triangles.VertexBuffer.StartAddress = m_pRayTraceVertexBuffer->GetGPUVirtualAddress();
+	geomDesc.Triangles.VertexBuffer.StrideInBytes = sizeof(XMFLOAT3);
+	geomDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+	geomDesc.Triangles.VertexCount = 3;
+	geomDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+
+	// Get the size requirements for the scratch and AS buffers
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs = {};
+	inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+	inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+	inputs.NumDescs = 1;
+	inputs.pGeometryDescs = &geomDesc;
+	inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO info = {};
+	m_pDevice->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &info);
+
+	// Create the buffers. They need to support UAV, and since we are going to immediately use them, we create them with an unordered-access state
+	AccelerationStructureBuffers buffers;
+	buffers.pScratch = createBuffer(m_pDevice, info.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, kDefaultHeapProps);
+	buffers.pResult = createBuffer(m_pDevice, info.ResultDataMaxSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, kDefaultHeapProps);
+
+	// Create the bottom-level AS
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC asDesc = {};
+	asDesc.Inputs = inputs;
+	asDesc.DestAccelerationStructureData = buffers.pResult->GetGPUVirtualAddress();
+	asDesc.ScratchAccelerationStructureData = buffers.pScratch->GetGPUVirtualAddress();
+
+	m_pCommandList->BuildRaytracingAccelerationStructure(&asDesc, 0, nullptr);
+
+	// We need to insert a UAV barrier before using the acceleration structures in a raytracing operation
+	D3D12_RESOURCE_BARRIER uavBarrier = {};
+	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	uavBarrier.UAV.pResource = buffers.pResult;
+	m_pCommandList->ResourceBarrier(1, &uavBarrier);
+	return buffers;
+}
+
+AccelerationStructureBuffers Graphics::CreateTopLevel()
+{
+	// First, get the size of the TLAS buffers and create them
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS inputs = {};
+	inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+	inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+	inputs.NumDescs = 1;
+	inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+
+	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO info;
+	m_pDevice->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &info);
+	// Create the buffers
+	AccelerationStructureBuffers buffers;
+	buffers.pScratch = createBuffer(m_pDevice, info.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, kDefaultHeapProps);
+	buffers.pResult = createBuffer(m_pDevice, info.ResultDataMaxSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, kDefaultHeapProps);
+	m_TlasSize = info.ResultDataMaxSizeInBytes;
+
+	// The instance desc should be inside a buffer, create and map the buffer
+	buffers.pInstanceDesc = createBuffer(m_pDevice, sizeof(D3D12_RAYTRACING_INSTANCE_DESC), D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, kUploadHeapProps);
+	D3D12_RAYTRACING_INSTANCE_DESC* pInstanceDesc;
+	buffers.pInstanceDesc->Map(0, nullptr, (void**)&pInstanceDesc);
+
+	// Initialize the instance desc. We only have a single instance
+	pInstanceDesc->InstanceID = 0;                            // This value will be exposed to the shader via InstanceID()
+	pInstanceDesc->InstanceContributionToHitGroupIndex = 0;   // This is the offset inside the shader-table. We only have a single geometry, so the offset 0
+	pInstanceDesc->Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+	XMMATRIX m; // Identity matrix
+	memcpy(pInstanceDesc->Transform, &m, sizeof(pInstanceDesc->Transform));
+	pInstanceDesc->AccelerationStructure = m_pBottomLevelAS->GetGPUVirtualAddress();
+	pInstanceDesc->InstanceMask = 0xFF;
+
+	// Unmap
+	buffers.pInstanceDesc->Unmap(0, nullptr);
+
+	// Create the TLAS
+	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC asDesc = {};
+	asDesc.Inputs = inputs;
+	asDesc.Inputs.InstanceDescs = buffers.pInstanceDesc->GetGPUVirtualAddress();
+	asDesc.DestAccelerationStructureData = buffers.pResult->GetGPUVirtualAddress();
+	asDesc.ScratchAccelerationStructureData = buffers.pScratch->GetGPUVirtualAddress();
+
+	m_pCommandList->BuildRaytracingAccelerationStructure(&asDesc, 0, nullptr);
+
+	// We need to insert a UAV barrier before using the acceleration structures in a raytracing operation
+	D3D12_RESOURCE_BARRIER uavBarrier = {};
+	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	uavBarrier.UAV.pResource = buffers.pResult;
+	m_pCommandList->ResourceBarrier(1, &uavBarrier);
+
+	return buffers;
+}
+
+ID3D12Resource* Graphics::createBuffer(ID3D12Device5* _pDevice, uint64_t _width, D3D12_RESOURCE_FLAGS _flags, D3D12_RESOURCE_STATES _initState, const D3D12_HEAP_PROPERTIES& _heapProps)
+{
+	D3D12_RESOURCE_DESC bufDesc = {};
+	bufDesc.Alignment = 0;
+	bufDesc.DepthOrArraySize = 1;
+	bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufDesc.Flags = _flags;
+	bufDesc.Format = DXGI_FORMAT_UNKNOWN;
+	bufDesc.Height = 1;
+	bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	bufDesc.MipLevels = 1;
+	bufDesc.SampleDesc.Count = 1;
+	bufDesc.SampleDesc.Quality = 0;
+	bufDesc.Width = _width;
+
+	ID3D12Resource* pBuffer;
+	HRESULT hr = m_pDevice->CreateCommittedResource(&_heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc, _initState, nullptr, IID_PPV_ARGS(&pBuffer));
+	if (FAILED(hr))
+	{
+		return nullptr;
+	}
+	return pBuffer;
+}
+
+void Graphics::createRtPipelineState()
+{
+	// Need 10 subobjects:
+	 //  1 for the DXIL library
+	 //  1 for hit-group
+	 //  2 for RayGen root-signature (root-signature and the subobject association)
+	 //  2 for the root-signature shared between miss and hit shaders (signature and association)
+	 //  2 for shader config (shared between all programs. 1 for the config, 1 for association)
+	 //  1 for pipeline config
+	 //  1 for the global root signature
+	std::array<D3D12_STATE_SUBOBJECT, 10> subobjects;
+	uint32_t index = 0;
+
+	// Create the DXIL library
+	DxilLibrary dxilLib = createDxilLibrary();
+	subobjects[index++] = dxilLib.stateSubobject; // 0 Library
+	subobjects[index++] = dxilLib.stateSubobject; // 0 Library
+
+	
+}
+static const WCHAR* kRayGenShader = L"rayGen";
+static const WCHAR* kMissShader = L"miss";
+static const WCHAR* kClosestHitShader = L"chs";
+static const WCHAR* kHitGroup = L"HitGroup";
+DxilLibrary Graphics::createDxilLibrary()
+{
+	// Compile the shader
+	ID3DBlob* pDxilLib = compileLibrary(L"Data/04-Shaders.hlsl", L"lib_6_3");
+	const WCHAR* entryPoints[] = { kRayGenShader, kMissShader, kClosestHitShader };
+	return DxilLibrary(pDxilLib, entryPoints, arraysize(entryPoints));
+}
+
+ID3DBlob* Graphics::compileLibrary(const WCHAR* filename, const WCHAR* targetString)
+{
+	// Initialize the helper
+	gDxcDllHelper.Initialize();
+	IDxcCompiler* pCompiler;
+	IDxcLibrary* pLibrary;
+	(gDxcDllHelper.CreateInstance(CLSID_DxcCompiler, &pCompiler);
+	(gDxcDllHelper.CreateInstance(CLSID_DxcLibrary, &pLibrary);
+
+	// Open and read the file
+	std::ifstream shaderFile(filename);
+	if (shaderFile.good() == false)
+	{
+		//MessageBoxA(m_hw, "Can't open file " + wstring_2_string(std::wstring(filename)));
+		return nullptr;
+	}
+	std::stringstream strStream;
+	strStream << shaderFile.rdbuf();
+	std::string shader = strStream.str();
+
+	// Create blob from the string
+	IDxcBlobEncoding* pTextBlob;
+	(pLibrary->CreateBlobWithEncodingFromPinned((LPBYTE)shader.c_str(), (uint32_t)shader.size(), 0, &pTextBlob));
+
+	// Compile
+	IDxcOperationResult* pResult;
+	(pCompiler->Compile(pTextBlob, filename, L"", targetString, nullptr, 0, nullptr, 0, nullptr, &pResult));
+
+	// Verify the result
+	HRESULT resultCode;
+	(pResult->GetStatus(&resultCode));
+	if (FAILED(resultCode))
+	{
+		IDxcBlobEncoding* pError;
+		(pResult->GetErrorBuffer(&pError));
+		//std::string log = convertBlobToString(pError.GetInterfacePtr());
+		///msgBox("Compiler error:\n" + log);
+		return nullptr;
+	}
+
+	IDxcBlob* pBlob;
+	pResult->GetResult(&pBlob);
+	return pBlob;
+}
+
+std::string Graphics::convertBlobToString(ID3DBlob* pBlob)
+{
+	std::vector<char> infoLog(pBlob->GetBufferSize() + 1);
+	memcpy(infoLog.data(), pBlob->GetBufferPointer(), pBlob->GetBufferSize());
+	infoLog[pBlob->GetBufferSize()] = 0;
+	return std::string(infoLog.data());
 }

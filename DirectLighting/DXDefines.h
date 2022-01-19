@@ -11,3 +11,6 @@
 
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3dcompiler")
+
+#define d3d_call(a) {HRESULT hr_ = a; if(FAILED(hr_)) { d3dTraceHR( #a, hr_); }}
+#define arraysize(a) (sizeof(a)/sizeof(a[0]))
