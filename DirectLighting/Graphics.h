@@ -34,7 +34,7 @@
 #include "LWindow.h"
 
 #include "GraphicsData.h"
-
+#define SizeOfInUint32(obj) ((sizeof(obj) - 1) / sizeof(UINT32) + 1)
 //using namespace GData;
 using namespace DirectX;
 using namespace Microsoft::WRL;
@@ -123,6 +123,18 @@ struct ConstantBufferPerObject
 {
 	XMFLOAT4X4 wvpMat;
 };
+struct Viewport
+{
+	float left;
+	float top;
+	float right;
+	float bottom;
+};
+struct RayGenConstantBuffer
+{
+	Viewport viewport;
+	Viewport stencil;
+};
 class Graphics
 {
 public:
@@ -175,7 +187,7 @@ private:
 	//-------
 
 	//For Setting Up The Pipeline
-	RenderMode m_renderMode = RenderMode::rmRAZTERISER;
+	RenderMode m_renderMode = RenderMode::rmRAY_TRACE;
 	static const int m_frameBufferCount = 3; // number of buffers we want, 2 for double buffering, 3 for tripple buffering
 
 	IDXGIFactory4* dxgiFactory = nullptr;
@@ -285,12 +297,12 @@ private:
 	uint64_t m_TlasSize = 0;
 
 	void createRtPipelineState();
-	DxilLibrary createDxilLibrary();
-	IDxcBlob* compileLibrary(const WCHAR* filename, const WCHAR* targetString);
-	std::string convertBlobToString(ID3DBlob* pBlob);
-	ID3D12StateObject* m_pRayTracePSO;
-	ID3D12RootSignature* m_pEmptyRootSig;
 	
+	ID3D12StateObject* m_pRayTracePSO;
+	 // Root signatures
+	ID3D12RootSignature* m_raytracingGlobalRootSignature;
+	ID3D12RootSignature* m_raytracingLocalRootSignature;
+	RayGenConstantBuffer m_rayGenCB;
 	
 };
 

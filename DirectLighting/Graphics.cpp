@@ -58,6 +58,7 @@ bool Graphics::OnInit(LWindow &_window)
 		}break;
 		case RenderMode::rmRAY_TRACE:
 		{
+			InitRootSignature();
 			CreateAcceleratedStructures(_window.getWidth());
 		}break;
 	}
@@ -2005,12 +2006,12 @@ bool Graphics::InitRayRootSigniture()
 	ComPtr<ID3DBlob> error;
 
 	HRESULT hr = D3D12SerializeRootSignature(&globalRootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error);
-	//hr = m_pDevice->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_pGlobalRayTraceRootSigniture));
-	//if (FAILED(hr))
-	//	return false;
-	/*
+	hr = m_pDevice->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_raytracingGlobalRootSignature));
+	if (FAILED(hr))
+		return false;
+	
 	CD3DX12_ROOT_PARAMETER rootParameters[LocalRootSignatureParams::Count];
-	rootParameters[LocalRootSignatureParams::CubeConstantSlot].InitAsConstants(SizeOfInUint32(m_cubeCB), 1);
+	rootParameters[LocalRootSignatureParams::CubeConstantSlot].InitAsConstants(SizeOfInUint32(m_rayGenCB), 1);
 	CD3DX12_ROOT_SIGNATURE_DESC localRootSignatureDesc(ARRAYSIZE(rootParameters), rootParameters);
 	localRootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
 
@@ -2019,9 +2020,9 @@ bool Graphics::InitRayRootSigniture()
 	ComPtr<ID3DBlob> error;
 
 	HRESULT hr = D3D12SerializeRootSignature(&localRootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error);
-	HRESULT hr = m_pDevice->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_pLocalRayTraceRootSigniture));
+	HRESULT hr = m_pDevice->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_raytracingLocalRootSignature));
 	if (FAILED(hr))
-		return false;*/
+		return false;
 
 	return true;
 }
@@ -2189,73 +2190,8 @@ void Graphics::createRtPipelineState()
 	uint32_t index = 0;
 
 	// Create the DXIL library
-	DxilLibrary dxilLib = createDxilLibrary();
-	subobjects[index++] = dxilLib.stateSubobject; // 0 Library
-	subobjects[index++] = dxilLib.stateSubobject; // 0 Library
+	
 
 	
 }
-static const WCHAR* kRayGenShader = L"rayGen";
-static const WCHAR* kMissShader = L"miss";
-static const WCHAR* kClosestHitShader = L"chs";
-static const WCHAR* kHitGroup = L"HitGroup";
-DxilLibrary Graphics::createDxilLibrary()
-{
-	// Compile the shader
-	ID3DBlob* pDxilLib = compileLibrary(L"Data/04-Shaders.hlsl", L"lib_6_3");
-	const WCHAR* entryPoints[] = { kRayGenShader, kMissShader, kClosestHitShader };
-	return DxilLibrary(pDxilLib, entryPoints, arraysize(entryPoints));
-}
 
-ID3DBlob* Graphics::compileLibrary(const WCHAR* filename, const WCHAR* targetString)
-{
-	// Initialize the helper
-	gDxcDllHelper.Initialize();
-	IDxcCompiler* pCompiler;
-	IDxcLibrary* pLibrary;
-	(gDxcDllHelper.CreateInstance(CLSID_DxcCompiler, &pCompiler);
-	(gDxcDllHelper.CreateInstance(CLSID_DxcLibrary, &pLibrary);
-
-	// Open and read the file
-	std::ifstream shaderFile(filename);
-	if (shaderFile.good() == false)
-	{
-		//MessageBoxA(m_hw, "Can't open file " + wstring_2_string(std::wstring(filename)));
-		return nullptr;
-	}
-	std::stringstream strStream;
-	strStream << shaderFile.rdbuf();
-	std::string shader = strStream.str();
-
-	// Create blob from the string
-	IDxcBlobEncoding* pTextBlob;
-	(pLibrary->CreateBlobWithEncodingFromPinned((LPBYTE)shader.c_str(), (uint32_t)shader.size(), 0, &pTextBlob));
-
-	// Compile
-	IDxcOperationResult* pResult;
-	(pCompiler->Compile(pTextBlob, filename, L"", targetString, nullptr, 0, nullptr, 0, nullptr, &pResult));
-
-	// Verify the result
-	HRESULT resultCode;
-	(pResult->GetStatus(&resultCode));
-	if (FAILED(resultCode))
-	{
-		IDxcBlobEncoding* pError;
-		(pResult->GetErrorBuffer(&pError));
-		//std::string log = convertBlobToString(pError.GetInterfacePtr());
-		///msgBox("Compiler error:\n" + log);
-		return nullptr;
-	}
-
-	IDxcBlob* pBlob;
-	pResult->GetResult(&pBlob);
-	return pBlob;
-}
-
-std::string Graphics::convertBlobToString(ID3DBlob* pBlob)
-{
-	std::vector<char> infoLog(pBlob->GetBufferSize() + 1);
-	memcpy(infoLog.data(), pBlob->GetBufferPointer(), pBlob->GetBufferSize());
-	infoLog[pBlob->GetBufferSize()] = 0;
-	return std::string(infoLog.data());
-}
