@@ -1,5 +1,5 @@
 #pragma once
-
+#define ALIGN(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 /*
 #include <Windows.h>
 #include "DXDefines.h"
@@ -17,7 +17,7 @@
 #include <dxgi.h>
 #include <d3dcompiler.h>
 #include <wincodec.h>
-
+#include <dxgi1_6.h>
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3dcompiler")
 
@@ -25,21 +25,27 @@
 
 #include "D3dx12.h"
 #include "LWindow.h"
-
+#include "Structures.h"
 #include "GraphicsData.h"
 
 //using namespace GData;
 using namespace DirectX;
 using namespace Microsoft::WRL;
-struct Vertex
+
+static const D3D12_HEAP_PROPERTIES UploadHeapProperties =
 {
-	Vertex(XMFLOAT3 _pos, XMFLOAT2 _texCoord)
-	{
-		texCoord = _texCoord;
-		pos = _pos;
-	}
-	XMFLOAT3 pos;
-	XMFLOAT2 texCoord;
+	D3D12_HEAP_TYPE_UPLOAD,
+	D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+	D3D12_MEMORY_POOL_UNKNOWN,
+	0, 0
+};
+
+static const D3D12_HEAP_PROPERTIES DefaultHeapProperties =
+{
+	D3D12_HEAP_TYPE_DEFAULT,
+	D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+	D3D12_MEMORY_POOL_UNKNOWN,
+	0, 0
 };
 
 // this is the structure of our constant buffer.
@@ -62,19 +68,19 @@ public:
 	void CleanUp();
 
 	//Gets
-	ID3D12Device* Device(){return m_pDevice;}
+	ID3D12Device5* Device(){return m_pDevice;}
 	IDXGISwapChain3* SwapChain(){return m_pSwapChain;}
 	ID3D12CommandQueue* CommandQueue() {return m_pCommandQueue;}
 	ID3D12DescriptorHeap* RTVDescriptorHeap() {return m_pRTVDescriptorHeap;}
 	ID3D12Resource** RenderTargets(){return m_pRenderTargets;}
 	ID3D12CommandAllocator** CommandAllocator(){return m_pCommandAllocator;}
-	ID3D12GraphicsCommandList* CommandList(){ return m_pCommandList;}
+	ID3D12GraphicsCommandList4* CommandList(){ return m_pCommandList;}
 	ID3D12Fence** Fence(){return m_pFence;}
 	HANDLE FenceEvent(){return m_fenceEvent;}
 	int FrameIndex(){return m_frameIndex;}
 	UINT64* FenceValue(){return m_fenceValue;}
 private:
-
+	bool isRayTracing = true;
 	//Pipeline 
 	bool InitDevice();
 	bool InitCommandQueue();
@@ -103,7 +109,7 @@ private:
 
 	IDXGIFactory4* dxgiFactory = nullptr;
 
-	ID3D12Device* m_pDevice = nullptr; // direct3d device
+	ID3D12Device5* m_pDevice = nullptr; // direct3d device
 
 	IDXGISwapChain3* m_pSwapChain = nullptr; // swapchain used to switch between render targets
 
@@ -115,7 +121,7 @@ private:
 
 	ID3D12CommandAllocator* m_pCommandAllocator[m_frameBufferCount]; // we want enough allocators for each buffer * number of threads (we only have one thread)
 
-	ID3D12GraphicsCommandList* m_pCommandList = nullptr; // a command list we can record commands into, then execute them to render the frame
+	ID3D12GraphicsCommandList4* m_pCommandList = nullptr; // a command list we can record commands into, then execute them to render the frame
 
 	ID3D12Fence* m_pFence[m_frameBufferCount];    // an object that is locked while our command list is being executed by the gpu. We need as many 
 																					 //as we have allocators (more if we want to know when the gpu is finished with an asset)
@@ -187,6 +193,46 @@ private:
 
 	ID3D12DescriptorHeap* mainDescriptorHeap;
 	ID3D12Resource* textureBufferUploadHeap;
+
+	ID3D12Resource* CreateBuffer(D3D12BufferCreateInfo& info);
+	void CompileShader(D3D12ShaderCompilerInfo& compilerInfo, D3D12ShaderInfo& info, IDxcBlob** blob);
+	void CompileRayShader(D3D12ShaderCompilerInfo& compilerInfo, RtProgram& program);
+	ID3D12Resource* CreateConstantBuffer(UINT64 size);
+	void CreateViewCB();
+	void CreateMateriaCB();
+	void InitShaderCompiler(D3D12ShaderCompilerInfo &_shaderCompilerInfo);
+
+	//RayTracing
+	DXRGlobal m_dxr = {};
+	D3D12ShaderCompilerInfo shaderCompiler;
+	ID3D12Resource* m_pDXROutput;
+	Model m_model;
+	ID3D12DescriptorHeap* m_pRayDescriptorHeap;
+
+	ID3D12Resource* viewCB = nullptr;
+	ViewCB	viewCBData;
+	UINT8* viewCBStart = nullptr;
+
+	ID3D12Resource* materialCB = nullptr;
+	MaterialCB		materialCBData;
+	UINT8* materialCBStart = nullptr;
+
+	ID3D12Resource* texture = nullptr;
+	ID3D12Resource* textureUploadResource = nullptr;
+	
+	void LoadModel();
+	void CreateVertexBuffer(Model& model);
+	void CreateIndexBuffer(Model& model);
+
+	void CreateBottomLevelAS(DXRGlobal& _dxr);
+	void CreateTopLevelAS(DXRGlobal& _dxr);
+	void CreateDXROutPut(int _width, int _height);	
+	void CreateDescriptorHeap(DXRGlobal& _dxr);
+	void CreateRayGenProgram(DXRGlobal& _dxr);
+	void CreateMissProgram(DXRGlobal& _dxr, D3D12ShaderCompilerInfo& compilerInfo);
+	void CreateClosetHitProgram(DXRGlobal& _dxr, D3D12ShaderCompilerInfo& compilerInfo);
+	void CreateRayPSO(DXRGlobal& _dxr);
+	void CreateShaderTable(DXRGlobal& dxr);
 
 };
 

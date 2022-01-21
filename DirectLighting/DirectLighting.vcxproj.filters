@@ -80,6 +80,12 @@
     <ClInclude Include="Status.h">
       <Filter>Header Files\Data</Filter>
     </ClInclude>
+    <ClInclude Include="Structures.h">
+      <Filter>Header Files\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="dxcapi.use.h">
+      <Filter>Header Files\Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">

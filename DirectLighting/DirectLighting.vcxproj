@@ -165,12 +165,14 @@
   <ItemGroup>
     <ClInclude Include="D12Core.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="dxcapi.use.h" />
     <ClInclude Include="DXDefines.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="GraphicsData.h" />
     <ClInclude Include="LWindow.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Status.h" />
+    <ClInclude Include="Structures.h" />
     <ClInclude Include="WindowsApp.h" />
   </ItemGroup>
   <ItemGroup>
