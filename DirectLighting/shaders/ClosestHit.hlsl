@@ -37,7 +37,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 	VertexAttributes vertex = GetVertexAttributes(triangleIndex, barycentrics);
 
 	int2 coord = floor(vertex.uv * textureResolution.x);
-	float3 color = albedo.Load(int3(coord, 0)).rgb;
+	float3 color = float3(1.0,0.0, 0.0);//albedo.Load(int3(coord, 0)).rgb;
 
 	payload.ShadedColorAndHitT = float4(color, RayTCurrent());
 }

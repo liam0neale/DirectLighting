@@ -47,7 +47,7 @@ void RayGen()
 
 	// Trace the ray
 	HitInfo payload;
-	payload.ShadedColorAndHitT = float4(0.f, 0.f, 0.f, 0.f);
+	payload.ShadedColorAndHitT = float4(0.0f, 0.f, 0.f, 0.f);
 
 	TraceRay(
 		SceneBVH,

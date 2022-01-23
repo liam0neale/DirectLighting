@@ -120,7 +120,7 @@ namespace Utils
 
 		// Get the first material
 		// Only support a single material right now
-		if (materials.size() > 0)
+		if (materials.empty() == false)
 		{
 			material.name = materials[0].name;
 			material.texturePath = materials[0].diffuse_texname;
