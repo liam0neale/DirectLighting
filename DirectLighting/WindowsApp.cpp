@@ -1,23 +1,26 @@
 #include "WindowsApp.h"
 
 LWindow* WindowsApp::m_pWindow = nullptr;
-
+JellyFishDev WindowsApp::m_jellyFish = JellyFishDev(); 
 int WindowsApp::Run(D12Core* pCore, HINSTANCE hInstance, int nCmdShow)
 {
-	//create window	
-  if(m_pWindow)
-    delete(m_pWindow);
-  m_pWindow = new LWindow();
-  m_pWindow->Init(hInstance, nCmdShow, pCore->getWidth(), pCore->getHeight(), true, WindowProc, pCore->getTitle().c_str());
+	if (m_pWindow)
+		delete(m_pWindow);
+	m_pWindow = new LWindow();
+	m_pWindow->Init(hInstance, nCmdShow, pCore->getWidth(), pCore->getHeight(), true, WindowProc, pCore->getTitle().c_str());
+	
+ConfigInfo config;
+	config.width = 1280;
+	config.height = 720;
+	config.model = "quad.obj";
+	config.vsync = false;
 
-	//initialise pipeline
+  //m_jellyFish.Init(config);
+	
 	if (!pCore->onInit(m_pWindow))
 	{
-		MessageBox(0, "Initalisation Failed",
-			"Error", MB_OK);
 		return 1;
 	}
-	
 	messageloop(pCore);
 	
   return 0;
@@ -73,6 +76,9 @@ int WindowsApp::messageloop(D12Core* pCore)
 			{
 				case EngineStatus::Status::sRUNNING:
 				{
+					//m_jellyFish.Update();
+					//m_jellyFish.Render();
+					
 					pCore->onUpdate();
 					pCore->onRender();
 				}break;
@@ -83,6 +89,7 @@ int WindowsApp::messageloop(D12Core* pCore)
 			}
 		}
 	}
-	pCore->onDestroy();
+	m_jellyFish.Cleanup();
+	
 	return msg.wParam;
 }

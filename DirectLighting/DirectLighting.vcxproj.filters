@@ -31,6 +31,12 @@
     <Filter Include="Graphics\Shaders">
       <UniqueIdentifier>{624c576d-f5cd-47f4-83d8-51e666c51938}</UniqueIdentifier>
     </Filter>
+    <Filter Include="API">
+      <UniqueIdentifier>{ffe589d6-f4bc-4741-9ba2-6cdd8e66a323}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\External">
+      <UniqueIdentifier>{88692e36-5fe8-4229-bbef-6245f78e585b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -50,6 +56,15 @@
     </ClCompile>
     <ClCompile Include="Graphics.cpp">
       <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="JellyFishDev.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="JFGraphics.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>API</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -85,6 +100,24 @@
     </ClInclude>
     <ClInclude Include="dxcapi.use.h">
       <Filter>Header Files\Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="JellyFishDev.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="JFGraphics.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="JFStructures.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>API\External</Filter>
+    </ClInclude>
+    <ClInclude Include="tiny_obj_loader.h">
+      <Filter>API\External</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

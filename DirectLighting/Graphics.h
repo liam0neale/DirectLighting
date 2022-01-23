@@ -25,28 +25,14 @@
 
 #include "D3dx12.h"
 #include "LWindow.h"
-#include "Structures.h"
+#include "JFStructures.h"
 #include "GraphicsData.h"
 
 //using namespace GData;
 using namespace DirectX;
 using namespace Microsoft::WRL;
 
-static const D3D12_HEAP_PROPERTIES UploadHeapProperties =
-{
-	D3D12_HEAP_TYPE_UPLOAD,
-	D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-	D3D12_MEMORY_POOL_UNKNOWN,
-	0, 0
-};
 
-static const D3D12_HEAP_PROPERTIES DefaultHeapProperties =
-{
-	D3D12_HEAP_TYPE_DEFAULT,
-	D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-	D3D12_MEMORY_POOL_UNKNOWN,
-	0, 0
-};
 
 // this is the structure of our constant buffer.
 struct ConstantBufferPerObject 
@@ -80,7 +66,7 @@ public:
 	int FrameIndex(){return m_frameIndex;}
 	UINT64* FenceValue(){return m_fenceValue;}
 private:
-	bool isRayTracing = true;
+
 	//Pipeline 
 	bool InitDevice();
 	bool InitCommandQueue();
@@ -193,46 +179,6 @@ private:
 
 	ID3D12DescriptorHeap* mainDescriptorHeap;
 	ID3D12Resource* textureBufferUploadHeap;
-
-	ID3D12Resource* CreateBuffer(D3D12BufferCreateInfo& info);
-	void CompileShader(D3D12ShaderCompilerInfo& compilerInfo, D3D12ShaderInfo& info, IDxcBlob** blob);
-	void CompileRayShader(D3D12ShaderCompilerInfo& compilerInfo, RtProgram& program);
-	ID3D12Resource* CreateConstantBuffer(UINT64 size);
-	void CreateViewCB();
-	void CreateMateriaCB();
-	void InitShaderCompiler(D3D12ShaderCompilerInfo &_shaderCompilerInfo);
-
-	//RayTracing
-	DXRGlobal m_dxr = {};
-	D3D12ShaderCompilerInfo shaderCompiler;
-	ID3D12Resource* m_pDXROutput;
-	Model m_model;
-	ID3D12DescriptorHeap* m_pRayDescriptorHeap;
-
-	ID3D12Resource* viewCB = nullptr;
-	ViewCB	viewCBData;
-	UINT8* viewCBStart = nullptr;
-
-	ID3D12Resource* materialCB = nullptr;
-	MaterialCB		materialCBData;
-	UINT8* materialCBStart = nullptr;
-
-	ID3D12Resource* texture = nullptr;
-	ID3D12Resource* textureUploadResource = nullptr;
-	
-	void LoadModel();
-	void CreateVertexBuffer(Model& model);
-	void CreateIndexBuffer(Model& model);
-
-	void CreateBottomLevelAS(DXRGlobal& _dxr);
-	void CreateTopLevelAS(DXRGlobal& _dxr);
-	void CreateDXROutPut(int _width, int _height);	
-	void CreateDescriptorHeap(DXRGlobal& _dxr);
-	void CreateRayGenProgram(DXRGlobal& _dxr);
-	void CreateMissProgram(DXRGlobal& _dxr, D3D12ShaderCompilerInfo& compilerInfo);
-	void CreateClosetHitProgram(DXRGlobal& _dxr, D3D12ShaderCompilerInfo& compilerInfo);
-	void CreateRayPSO(DXRGlobal& _dxr);
-	void CreateShaderTable(DXRGlobal& dxr);
 
 };
 

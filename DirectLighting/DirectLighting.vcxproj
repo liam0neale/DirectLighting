@@ -157,9 +157,12 @@
   <ItemGroup>
     <ClCompile Include="D12Core.cpp" />
     <ClCompile Include="Graphics.cpp" />
+    <ClCompile Include="JellyFishDev.cpp" />
+    <ClCompile Include="JFGraphics.cpp" />
     <ClCompile Include="LWindow.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Utils.cpp" />
     <ClCompile Include="WindowsApp.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -169,10 +172,16 @@
     <ClInclude Include="DXDefines.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="GraphicsData.h" />
+    <ClInclude Include="JellyFishDev.h" />
+    <ClInclude Include="JFGraphics.h" />
+    <ClInclude Include="JFStructures.h" />
     <ClInclude Include="LWindow.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Status.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="Structures.h" />
+    <ClInclude Include="tiny_obj_loader.h" />
+    <ClInclude Include="Utils.h" />
     <ClInclude Include="WindowsApp.h" />
   </ItemGroup>
   <ItemGroup>
