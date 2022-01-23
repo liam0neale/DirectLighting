@@ -1,6 +1,7 @@
 #pragma once
 #include "D12Core.h"
 #include "JellyFishDev.h"
+#include "Graphics.h"
 class Scene : public D12Core
 {
 public:
@@ -14,8 +15,9 @@ public:
 
 private:
   static JellyFishDev m_jellyFish;
+  static Graphics m_graphics;
   LWindow m_window;
-  bool m_useRayTracing = true;
+  bool m_useRayTracing = false;
 
   Model model;
   Material material;

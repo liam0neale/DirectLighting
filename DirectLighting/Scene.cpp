@@ -1,6 +1,7 @@
 #include "Scene.h"
 
 JellyFishDev Scene::m_jellyFish = JellyFishDev();
+Graphics Scene::m_graphics = Graphics();
 unsigned int Scene::m_width = 0;
 unsigned int Scene::m_height = 0;
 Scene::Scene(unsigned int _width, unsigned int _height, std::string _name) : D12Core(_width, _height, _name)
@@ -75,7 +76,7 @@ bool Scene::onInit(LWindow* _window)
   }
   else
   {
-
+    m_graphics.OnInit(*_window);
   }
   return result;
 }
@@ -88,7 +89,7 @@ bool Scene::onUpdate()
   }
   else
   {
-
+    m_graphics.Update();
   }
 
   return true;
@@ -105,7 +106,7 @@ bool Scene::onRender()
   }
   else
   {
-    
+    m_graphics.Render();
   }
 
   return true;

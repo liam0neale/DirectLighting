@@ -25,6 +25,6 @@ private:
 	D3D12Resources resources = {};
 	D3D12ShaderCompilerInfo shaderCompiler;
 
-	bool m_useRayTracing = true;
+	bool m_useRayTracing = false;
 };
 
