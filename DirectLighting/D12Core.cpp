@@ -9,7 +9,7 @@ D12Core::D12Core(unsigned int _width, unsigned int _height, std::string _name)
 
 	m_title = _name;
 
-	m_pGraphics = new Graphics();
+	//m_pGraphics = new Graphics();
 }
 
 D12Core::~D12Core()

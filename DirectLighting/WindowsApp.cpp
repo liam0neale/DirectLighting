@@ -1,7 +1,7 @@
 #include "WindowsApp.h"
 
 LWindow* WindowsApp::m_pWindow = nullptr;
-JellyFishDev WindowsApp::m_jellyFish = JellyFishDev(); 
+
 int WindowsApp::Run(D12Core* pCore, HINSTANCE hInstance, int nCmdShow)
 {
 	if (m_pWindow)
@@ -9,13 +9,9 @@ int WindowsApp::Run(D12Core* pCore, HINSTANCE hInstance, int nCmdShow)
 	m_pWindow = new LWindow();
 	m_pWindow->Init(hInstance, nCmdShow, pCore->getWidth(), pCore->getHeight(), true, WindowProc, pCore->getTitle().c_str());
 	
-ConfigInfo config;
-	config.width = 1280;
-	config.height = 720;
-	config.model = "quad.obj";
-	config.vsync = false;
 
-  //m_jellyFish.Init(config);
+
+
 	
 	if (!pCore->onInit(m_pWindow))
 	{
@@ -77,7 +73,7 @@ int WindowsApp::messageloop(D12Core* pCore)
 				case EngineStatus::Status::sRUNNING:
 				{
 					//m_jellyFish.Update();
-					//m_jellyFish.Render();
+				  //m_jellyFish.Render();
 					
 					pCore->onUpdate();
 					pCore->onRender();
@@ -89,7 +85,7 @@ int WindowsApp::messageloop(D12Core* pCore)
 			}
 		}
 	}
-	m_jellyFish.Cleanup();
-	
+	//m_jellyFish.Cleanup();
+	pCore->onDestroy();
 	return msg.wParam;
 }

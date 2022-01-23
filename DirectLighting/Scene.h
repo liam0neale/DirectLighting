@@ -1,6 +1,6 @@
 #pragma once
 #include "D12Core.h"
-
+#include "JellyFishDev.h"
 class Scene : public D12Core
 {
 public:
@@ -13,6 +13,11 @@ public:
   bool onDestroy() override;
 
 private:
-  
+  static JellyFishDev m_jellyFish;
+  LWindow m_window;
+  bool m_useRayTracing = true;
+
+  Model model;
+  Material material;
 };
 
