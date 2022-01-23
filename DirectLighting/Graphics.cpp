@@ -1658,7 +1658,7 @@ bool Graphics::CreateTexture()
 	BYTE* imageData;
 	D3D12_RESOURCE_DESC textureDesc;
 	int imageBytesPerRow;
-	int imageSize = LoadImageDataFromFile(&imageData, textureDesc, L"textures\JellyFishLogo.jpg", imageBytesPerRow);
+	int imageSize = LoadImageDataFromFile(&imageData, textureDesc, L"JellyFishLogo.jpg", imageBytesPerRow);
 
 	// make sure we have data
 	if (imageSize <= 0)
