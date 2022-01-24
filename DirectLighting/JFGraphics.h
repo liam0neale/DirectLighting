@@ -65,6 +65,7 @@ namespace D3D12
 	void Create_SwapChain(D3D12Global& d3d, HWND& window);
 
 	ID3D12RootSignature* Create_Root_Signature(D3D12Global& d3d, const D3D12_ROOT_SIGNATURE_DESC& desc);
+	
 
 	void Reset_CommandList(D3D12Global& d3d);
 	void Submit_CmdList(D3D12Global& d3d);
@@ -73,6 +74,13 @@ namespace D3D12
 	void MoveToNextFrame(D3D12Global& d3d);
 
 	void Destroy(D3D12Global& d3d);
+}
+
+namespace Rasteriser
+{
+	ID3D12RootSignature* CreateRasteriserProgram(D3D12Global& d3d);
+	
+	void LoadAssets(D3D12Global& d3d);
 }
 
 namespace DXR

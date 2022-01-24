@@ -224,6 +224,8 @@ struct D3D12Global
 	IDXGISwapChain3* swapChain = nullptr;
 	ID3D12Resource* backBuffer[2] = { nullptr, nullptr };
 
+	RasteriserProgram rasterProgram;
+
 	ID3D12Fence* fence = nullptr;
 	UINT64											fenceValues[2] = { 0, 0 };
 	HANDLE											fenceEvent;
@@ -309,6 +311,15 @@ struct HitProgram
 		desc.ClosestHitShaderImport = chs.exportDesc.Name;
 	}
 
+};
+
+struct RasteriserProgram
+{
+	ID3D12RootSignature* rootSig;
+	ID3D12PipelineState* pso;
+	
+	D3D12Resources resource;
+	
 };
 
 struct DXRGlobal
