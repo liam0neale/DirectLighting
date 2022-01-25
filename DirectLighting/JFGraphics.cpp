@@ -1552,6 +1552,7 @@ namespace Rasteriser
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
 		return	D3D12::Create_Root_Signature(d3d, rootSignatureDesc);
 	}
+	
 	void LoadAssets(D3D12Global& d3d)
 	{
 		// create root signature
@@ -1708,21 +1709,13 @@ namespace Rasteriser
 		// default heap is memory on the GPU. Only the GPU has access to this memory
 		// To get data into this heap, we will have to upload the data using
 		// an upload heap
-		
-		d3d.device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
-			D3D12_HEAP_FLAG_NONE, // no flags
-			&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-			D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
-																			// from the upload heap to this heap
-			nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-			IID_PPV_ARGS(&d3d.rasterProgram.vertexBuffer));
+
+		D3D12BufferCreateInfo vertbuffInfo(((UINT)ARRAYSIZE(vList) * sizeof(Vertex)), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
+		D3DResources::Create_Buffer(d3d, vertbuffInfo, &d3d.rasterProgram.resource.vertexBuffer);
+		//d3d.device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&d3d.rasterProgram.resource.vertexBuffer));
 
 		// we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
-		d3d.rasterProgram.vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
-
-		D3D12BufferCreateInfo vertexBufferInfo = D3D12BufferCreateInfo(vBufferSize, &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), )
-		D3DResources::Create_Buffer(d3d, )
+		d3d.rasterProgram.resource.vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
 
 		// create upload heap
 		// upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
@@ -1745,7 +1738,7 @@ namespace Rasteriser
 
 		// we are now creating a command with the command list to copy the data from
 		// the upload heap to the default heap
-		UpdateSubresources(d3d.cmdList, d3d.rasterProgram.vertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
+		UpdateSubresources(d3d.cmdList, d3d.rasterProgram.resource.vertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
 
 
 		DWORD iList[] = {
@@ -1786,10 +1779,10 @@ namespace Rasteriser
 			&CD3DX12_RESOURCE_DESC::Buffer(iBufferSize), // resource description for a buffer
 			D3D12_RESOURCE_STATE_COPY_DEST, // start in the copy destination state
 			nullptr, // optimized clear value must be null for this type of resource
-			IID_PPV_ARGS(&d3d.rasterProgram.indexBuffer));
+			IID_PPV_ARGS(&d3d.rasterProgram.resource.indexBuffer));
 
 		// we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
-		d3d.rasterProgram.indexBuffer->SetName(L"Index Buffer Resource Heap");
+		d3d.rasterProgram.resource.indexBuffer->SetName(L"Index Buffer Resource Heap");
 
 		ID3D12Resource* iBufferUploadHeap;
 		d3d.device->CreateCommittedResource(
@@ -1809,18 +1802,18 @@ namespace Rasteriser
 
 		// we are now creating a command with the command list to copy the data from
 		// the upload heap to the default heap
-		UpdateSubresources(d3d.cmdList, d3d.rasterProgram.indexBuffer, iBufferUploadHeap, 0, 0, 1, &indexData);
+		UpdateSubresources(d3d.cmdList, d3d.rasterProgram.resource.indexBuffer, iBufferUploadHeap, 0, 0, 1, &indexData);
 
 		// transition the vertex buffer data from copy destination state to vertex buffer state
-		d3d.cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(d3d.rasterProgram.indexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+		d3d.cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(d3d.rasterProgram.resource.indexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 		// create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
-		d3d.rasterProgram.indexBufferView.BufferLocation = d3d.rasterProgram.indexBuffer->GetGPUVirtualAddress();
-		d3d.rasterProgram.indexBufferView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
-		d3d.rasterProgram.indexBufferView.SizeInBytes = iBufferSize;
+		d3d.rasterProgram.resource.indexBufferView.BufferLocation = d3d.rasterProgram.resource.indexBuffer->GetGPUVirtualAddress();
+		d3d.rasterProgram.resource.indexBufferView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
+		d3d.rasterProgram.resource.indexBufferView.SizeInBytes = iBufferSize;
 
 		// transition the vertex buffer data from copy destination state to vertex buffer state
-		d3d.cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(d3d.rasterProgram.vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+		d3d.cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(d3d.rasterProgram.resource.vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 
 		// increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
@@ -1832,8 +1825,8 @@ namespace Rasteriser
 		}
 
 		// create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
-		d3d.rasterProgram.vertexBufferView.BufferLocation = d3d.rasterProgram.vertexBuffer->GetGPUVirtualAddress();
-		d3d.rasterProgram.vertexBufferView.StrideInBytes = sizeof(Vertex);
-		d3d.rasterProgram.vertexBufferView.SizeInBytes = vBufferSize;
+		d3d.rasterProgram.resource.vertexBufferView.BufferLocation = d3d.rasterProgram.resource.vertexBuffer->GetGPUVirtualAddress();
+		d3d.rasterProgram.resource.vertexBufferView.StrideInBytes = sizeof(Vertex);
+		d3d.rasterProgram.resource.vertexBufferView.SizeInBytes = vBufferSize;
 	}
 }

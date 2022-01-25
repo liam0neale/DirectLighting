@@ -1,11 +1,17 @@
 #pragma once
+#include <Windows.h>
+
+
 #include "DXDefines.h"
+#include "D3dx12.h"
 #include "JFStructures.h"
 #include "Utils.h"
+#pragma comment(lib, "dxgi")
+#pragma comment(lib, "d3dcompiler")
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
+using namespace DirectX;
+using namespace Microsoft::WRL;
+
 static const D3D12_HEAP_PROPERTIES UploadHeapProperties =
 {
 	D3D12_HEAP_TYPE_UPLOAD,

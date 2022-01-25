@@ -224,7 +224,7 @@ struct D3D12Global
 	IDXGISwapChain3* swapChain = nullptr;
 	ID3D12Resource* backBuffer[2] = { nullptr, nullptr };
 
-	RasteriserProgram rasterProgram;
+	RasteriserProgram rasterProgram = {nullptr, nullptr, nullptr};
 
 	ID3D12Fence* fence = nullptr;
 	UINT64											fenceValues[2] = { 0, 0 };

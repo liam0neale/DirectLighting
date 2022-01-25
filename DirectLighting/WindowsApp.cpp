@@ -8,8 +8,6 @@ int WindowsApp::Run(D12Core* pCore, HINSTANCE hInstance, int nCmdShow)
 		delete(m_pWindow);
 	m_pWindow = new LWindow();
 	m_pWindow->Init(hInstance, nCmdShow, pCore->getWidth(), pCore->getHeight(), true, WindowProc, pCore->getTitle().c_str());
-	
-
 
 
 	
