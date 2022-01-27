@@ -392,7 +392,7 @@ void JellyFishDev::UpdatePipeline(D3D12Global& d3d, D3D12Resources& resources)
 
 
 	// Clear the render target by using the ClearRenderTargetView command
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	const float clearColor[] = { 0.0f, 1.2f, 0.4f, 1.0f };
 	d3d.cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 	// clear the depth/stencil buffer
@@ -409,6 +409,7 @@ void JellyFishDev::UpdatePipeline(D3D12Global& d3d, D3D12Resources& resources)
 //	d3d.cmdList->SetGraphicsRootDescriptorTable(1, resources.descriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	// draw triangle
+	d3d.cmdList->SetPipelineState(rasterProgram.pso);
 	d3d.cmdList->RSSetViewports(1, &m_viewport); // set the viewports
 	d3d.cmdList->RSSetScissorRects(1, &m_scissorRect); // set the scissor rects
 	d3d.cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology

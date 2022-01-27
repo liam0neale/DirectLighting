@@ -23,7 +23,7 @@ bool Scene::onInit(LWindow* _window)
   config.width = _window->getWidth();
   config.height = _window->getHeight();
   config.model = "quad.obj";
-  config.vsync = false;
+  config.vsync = true;
   m_jellyFish.Init(config);
 
   // Initialize D3D12
@@ -145,7 +145,7 @@ bool Scene::onInit(LWindow* _window)
     
     //m_graphics.OnInit(*_window);
     m_jellyFish.CreateRasterProgram(*dx);
-    m_jellyFish.CreateRasterPSO(*dx, model);
+    m_jellyFish.CreateRasterPSO(*dx, m_cube);
   }
 
   dx->cmdList->Close();
@@ -174,10 +174,16 @@ bool Scene::onRender()
 {
   if (!m_useRayTracing)
   {
-    //m_jellyFish.UpdatePipeline(*m_jellyFish.getDXGlobal(), *m_jellyFish.getResources());
+    m_jellyFish.UpdatePipeline(*m_jellyFish.getDXGlobal(), *m_jellyFish.getResources());
   }
-  DXR::Build_Command_List(*m_jellyFish.getDXGlobal(), *m_jellyFish.getDXRGlobal(), *m_jellyFish.getResources());
-    
+  else
+  {
+    DXR::Build_Command_List(*m_jellyFish.getDXGlobal(), *m_jellyFish.getDXRGlobal(), *m_jellyFish.getResources());
+  }
+  
+  // Submit the command list and wait for the GPU to idle
+  D3D12::Submit_CmdList(*m_jellyFish.getDXGlobal());
+  D3D12::WaitForGPU(*m_jellyFish.getDXGlobal());
   
   
   D3D12::Present(*m_jellyFish.getDXGlobal());

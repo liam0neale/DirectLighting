@@ -20,7 +20,8 @@ public:
 	void CreateRasterProgram(D3D12Global& d3d);
 	void CreateRasterPSO(D3D12Global& d3d, Model _model);
 	void UpdatePipeline(D3D12Global& d3d, D3D12Resources& resources);
-	
+	bool CreatePerObjectConstantBuffer(D3D12Global& d3d, D3D12Resources& resources);
+
 private:
 	HWND window;
 	

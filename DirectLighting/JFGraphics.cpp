@@ -1462,9 +1462,7 @@ namespace DXR
 		// Wait for the transitions to complete
 		d3d.cmdList->ResourceBarrier(1, &OutputBarriers[0]);
 
-		// Submit the command list and wait for the GPU to idle
-		D3D12::Submit_CmdList(d3d);
-		D3D12::WaitForGPU(d3d);
+	
 	}
 
 	/**
