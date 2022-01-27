@@ -65,7 +65,7 @@ public:
 	HANDLE FenceEvent(){return m_fenceEvent;}
 	int FrameIndex(){return m_frameIndex;}
 	UINT64* FenceValue(){return m_fenceValue;}
-private:
+
 
 	//Pipeline 
 	bool InitDevice();
@@ -77,8 +77,8 @@ private:
 	bool InitFence();
 
 	//Drawing
-	bool InitRootSignature();
-	bool CreatePSO(PSOData& _psoData);
+	bool InitRootSignature(ID3D12Device5* m_pDevice);
+	bool CreatePSO(ID3D12Device5* m_pDevice, ID3D12GraphicsCommandList4* pCommandList, Model model);
 	bool CreateVertexBuffer();
 	bool CreateIndexBuffer(int _vBufferSize, ID3D12Resource* _pVBufferUploadHeap);
   bool CreateDepthBuffer(LWindow& _window);
@@ -86,7 +86,7 @@ private:
 	bool CreatePerObjectConstantBuffer();
 
 	bool InitScene(int _width, int _height);
-
+private:
 	bool Test(int _width, int _height, HWND _hwnd);
 	//-------
 

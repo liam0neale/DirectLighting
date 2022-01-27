@@ -98,6 +98,17 @@ struct Model
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
+	XMFLOAT3 pos;
+	XMFLOAT3 rot;
+	XMMATRIX world;
+};
+
+struct Camera
+{
+	XMFLOAT3 pos;
+	XMFLOAT3 rot;
+	XMMATRIX view;
+	XMMATRIX projection;
 };
 
 struct TextureInfo
@@ -229,8 +240,8 @@ struct D3D12Global
 	HANDLE											fenceEvent;
 	UINT											frameIndex = 0;
 
-	int												width = 640;
-	int												height = 360;
+	int												width = 800;
+	int												height = 600;
 	bool											vsync = false;
 };
 
@@ -309,6 +320,19 @@ struct HitProgram
 		desc.ClosestHitShaderImport = chs.exportDesc.Name;
 	}
 
+};
+
+struct RasterProgram
+{
+	ID3D12RootSignature* rootSig;
+	ID3D12PipelineState* pso;
+	ID3D12Resource* pVertexBuffer; // a default buffer in GPU memory that we will load vertex data for our triangle into
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView; // a structure containing a pointer to the vertex data in gpu memory
+																							 // the total size of the buffer, and the size of each element (vertex)
+	ID3D12Resource* pIndexBuffer;
+	D3D12_INDEX_BUFFER_VIEW indexBufferView;
+
+	int numIndices = 0;
 };
 
 struct DXRGlobal

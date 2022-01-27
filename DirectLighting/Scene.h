@@ -21,5 +21,9 @@ private:
 
   Model model;
   Material material;
+  IDXGIFactory4* dxgiFactory = nullptr;
+
+  Model m_cube;
+  Camera m_camera;
 };
 

@@ -16,6 +16,11 @@ public:
 	D3D12Global* getDXGlobal() {return &d3d;}
 	D3D12Resources* getResources() { return &resources; }
 	D3D12ShaderCompilerInfo* getShaderInfo() { return &shaderCompiler; }
+
+	void CreateRasterProgram(D3D12Global& d3d);
+	void CreateRasterPSO(D3D12Global& d3d, Model _model);
+	void UpdatePipeline(D3D12Global& d3d, D3D12Resources& resources);
+	
 private:
 	HWND window;
 	
@@ -24,7 +29,9 @@ private:
 	D3D12Global d3d = {};
 	D3D12Resources resources = {};
 	D3D12ShaderCompilerInfo shaderCompiler;
+	RasterProgram rasterProgram;
+	D3D12_VIEWPORT m_viewport; // area that output from rasterizer will be stretched to.
+	D3D12_RECT m_scissorRect; // the area to draw in. pixels outside that area will not be drawn onto
 
-	bool m_useRayTracing = false;
 };
 

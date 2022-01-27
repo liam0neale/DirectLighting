@@ -10,5 +10,5 @@ struct VS_OUTPUT
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
 	// return interpolated color
-	return t1.Sample(s1, input.texCoord);
+	return float4(1.0, 1.0, 0.0, 1.0);//t1.Sample(s1, input.texCoord);
 }
