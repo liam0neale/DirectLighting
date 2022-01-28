@@ -87,28 +87,41 @@ struct Vertex
 	}
 };
 
+struct TESTVERTEX
+{
+	DirectX::XMFLOAT3 pos;
+};
+
 struct Material
 {
 	std::string name = "defaultMaterial";
 	std::string texturePath = "";
 	float  textureResolution = 512;
 };
+struct ConstantBufferPerObject
+{
+	XMFLOAT4X4 wvpMat;
+};
 
 struct Model
 {
 	std::vector<Vertex> vertices;
+	std::vector<TESTVERTEX> testVertex;
 	std::vector<uint32_t> indices;
-	XMFLOAT3 pos;
-	XMFLOAT3 rot;
-	XMMATRIX world;
+	XMFLOAT4 pos;
+	XMFLOAT4X4 rotMat;
+	XMFLOAT4X4 world;
+	ConstantBufferPerObject cbPerObject;
 };
 
 struct Camera
 {
-	XMFLOAT3 pos;
-	XMFLOAT3 rot;
-	XMMATRIX view;
-	XMMATRIX projection;
+	XMFLOAT4 pos;
+	XMFLOAT4 rot;
+	XMFLOAT4X4 view;
+	XMFLOAT4X4 projection;
+	XMFLOAT4 target;
+	XMFLOAT4 up;
 };
 
 struct TextureInfo
@@ -234,15 +247,17 @@ struct D3D12Global
 
 	IDXGISwapChain3* swapChain = nullptr;
 	ID3D12Resource* backBuffer[2] = { nullptr, nullptr };
-
+	
 	ID3D12Fence* fence = nullptr;
-	UINT64											fenceValues[2] = { 0, 0 };
+	static const int frameBufferCount = 3;
+	UINT64											fenceValues[frameBufferCount] = { 0, 0 };
 	HANDLE											fenceEvent;
 	UINT											frameIndex = 0;
 
 	int												width = 800;
 	int												height = 600;
 	bool											vsync = false;
+	
 };
 
 //--------------------------------------------------------------------------------------
@@ -351,3 +366,4 @@ struct DXRGlobal
 	ID3D12StateObject* rtpso = nullptr;
 	ID3D12StateObjectProperties* rtpsoInfo = nullptr;
 };
+

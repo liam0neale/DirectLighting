@@ -368,6 +368,7 @@ namespace D3DResources
 	*/
 	void Update_View_CB(D3D12Global& d3d, D3D12Resources& resources)
 	{
+
 		const float rotationSpeed = 0.005f;
 		XMMATRIX view, invView;
 		XMFLOAT3 eye, focus, up;

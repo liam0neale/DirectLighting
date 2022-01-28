@@ -35,10 +35,7 @@ using namespace Microsoft::WRL;
 
 
 // this is the structure of our constant buffer.
-struct ConstantBufferPerObject 
-{
-	XMFLOAT4X4 wvpMat;
-};
+
 class Graphics
 {
 public:
