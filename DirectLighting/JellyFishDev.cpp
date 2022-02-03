@@ -487,9 +487,9 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	HRESULT hr;
 
 	// -- Create the Device -- //
-
-	IDXGIFactory4* dxgiFactory;
-	hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
+//	IDXGIFactory4* dxgiFactory;
+/*
+	hr = CreateDXGIFactory1(IID_PPV_ARGS(&d3d.factory));
 	if (FAILED(hr))
 	{
 		return false;
@@ -502,7 +502,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	bool adapterFound = false; // set this to true when a good one was found
 
 								 // find first hardware gpu that supports d3d 12
-	while (dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
+	while (d3d.factory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC1 desc;
 		adapter->GetDesc1(&desc);
@@ -538,7 +538,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	hr = D3D12CreateDevice(
 		adapter,
 		D3D_FEATURE_LEVEL_11_0,
-		IID_PPV_ARGS(&device)
+		IID_PPV_ARGS(&d3d.device)
 	);
 	if (FAILED(hr))
 	{
@@ -551,7 +551,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT; // direct means the gpu can directly execute this command queue
 
-	hr = device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue)); // create the command queue
+	hr = d3d.device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&d3d.cmdQueue)); // create the command queue
 	if (FAILED(hr))
 	{
 		return false;
@@ -581,16 +581,17 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 
 	IDXGISwapChain* tempSwapChain;
 
-	hr = dxgiFactory->CreateSwapChain(
-		commandQueue, // the queue will be flushed once the swap chain is created
+	hr = d3d.factory->CreateSwapChain(
+		d3d.cmdQueue, // the queue will be flushed once the swap chain is created
 		&swapChainDesc, // give it the swap chain description we created above
 		&tempSwapChain // store the created swap chain in a temp IDXGISwapChain interface
 	);
 
 	swapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
 
-	frameIndex = swapChain->GetCurrentBackBufferIndex();
-
+	//frameIndex = d3d.swapChain->GetCurrentBackBufferIndex();
+	d3d.frameIndex = swapChain->GetCurrentBackBufferIndex();
+	//d3d.swapChain = swapChain;*/
 	// -- Create the Back Buffers (render target views) Descriptor Heap -- //
 
 	// describe an rtv descriptor heap and create
@@ -601,7 +602,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 														 // This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
 														 // otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	hr = device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap));
+	hr = d3d.device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap));
 	if (FAILED(hr))
 	{
 		return false;
@@ -610,7 +611,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	// get the size of a descriptor in this heap (this is a rtv heap, so only rtv descriptors should be stored in it.
 	// descriptor sizes may vary from device to device, which is why there is no set size and we must ask the 
 	// device to give us the size. we will use this size to increment a descriptor handle offset
-	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	rtvDescriptorSize = d3d.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	// get a handle to the first descriptor in the descriptor heap. a handle is basically a pointer,
 	// but we cannot literally use it like a c++ pointer.
@@ -621,24 +622,24 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	{
 		// first we get the n'th buffer in the swap chain and store it in the n'th
 		// position of our ID3D12Resource array
-		hr = swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i]));
+		hr = d3d.swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i]));
 		if (FAILED(hr))
 		{
 			return false;
 		}
 
 		// the we "create" a render target view which binds the swap chain buffer (ID3D12Resource[n]) to the rtv handle
-		device->CreateRenderTargetView(renderTargets[i], nullptr, rtvHandle);
+		d3d.device->CreateRenderTargetView(renderTargets[i], nullptr, rtvHandle);
 
 		// we increment the rtv handle by the rtv descriptor size we got above
 		rtvHandle.Offset(1, rtvDescriptorSize);
 	}
 
 	// -- Create the Command Allocators -- //
-
+/*
 	for (int i = 0; i < frameBufferCount; i++)
 	{
-		hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator[i]));
+		hr = d3d.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&d3d.cmdAlloc[i]));
 		if (FAILED(hr))
 		{
 			return false;
@@ -648,18 +649,18 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	// -- Create a Command List -- //
 
 	// create the command list with the first allocator
-	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[frameIndex], NULL, IID_PPV_ARGS(&commandList));
+	hr = d3d.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, d3d.cmdAlloc[d3d.frameIndex], NULL, IID_PPV_ARGS(&d3d.cmdList));
 	if (FAILED(hr))
 	{
 		return false;
 	}
 
 	// -- Create a Fence & Fence Event -- //
-
+*/
 	// create the fences
-	for (int i = 0; i < frameBufferCount; i++)
+	for (int i = 0; i < d3d.frameBufferCount; i++)
 	{
-		hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i]));
+		hr = d3d.device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i]));
 		if (FAILED(hr))
 		{
 			return false;
@@ -686,7 +687,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 		return false;
 	}
 
-	hr = device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
+	hr = d3d.device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
 	if (FAILED(hr))
 	{
 		return false;
@@ -775,7 +776,8 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	// you only set the VS. It's possible that you have a pso that only outputs data with the stream
 	// output, and not on a render target, which means you would not need anything after the stream
 	// output.
-
+	DXGI_SAMPLE_DESC sampleDesc = {};
+	sampleDesc.Count = 1; // multisample count (no multisampling, so we just put 1, since we still need 1 sample)
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {}; // a structure to define a pso
 	psoDesc.InputLayout = inputLayoutDesc; // the structure describing our input layout
 	psoDesc.pRootSignature = rootSignature; // the root signature that describes the input data this pso needs
@@ -790,7 +792,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	psoDesc.NumRenderTargets = 1; // we are only binding one render target
 
 	// create the pso
-	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject));
+	hr = d3d.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject));
 	if (FAILED(hr))
 	{
 		return false;
@@ -811,7 +813,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	// default heap is memory on the GPU. Only the GPU has access to this memory
 	// To get data into this heap, we will have to upload the data using
 	// an upload heap
-	device->CreateCommittedResource(
+	d3d.device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
 		D3D12_HEAP_FLAG_NONE, // no flags
 		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
@@ -827,7 +829,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	// upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
 	// We will upload the vertex buffer using this heap to the default heap
 	ID3D12Resource* vBufferUploadHeap;
-	device->CreateCommittedResource(
+	d3d.device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
 		D3D12_HEAP_FLAG_NONE, // no flags
 		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
@@ -844,19 +846,19 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 
 	// we are now creating a command with the command list to copy the data from
 	// the upload heap to the default heap
-	UpdateSubresources(commandList, vertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
+	UpdateSubresources(d3d.cmdList, vertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
 
 	// transition the vertex buffer data from copy destination state to vertex buffer state
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	d3d.cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 	// Now we execute the command list to upload the initial assets (triangle data)
-	commandList->Close();
-	ID3D12CommandList* ppCommandLists[] = { commandList };
-	commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	d3d.cmdList->Close();
+	ID3D12CommandList* ppCommandLists[] = { d3d.cmdList };
+	d3d.cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-	fenceValue[frameIndex]++;
-	hr = commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
+	fenceValue[d3d.frameIndex]++;
+	hr = d3d.cmdQueue->Signal(fence[d3d.frameIndex], fenceValue[d3d.frameIndex]);
 	if (FAILED(hr))
 	{
 		//Running = false;
@@ -893,7 +895,7 @@ void JellyFishDev::UpdatePipelineTest()
 
 	// we can only reset an allocator once the gpu is done with it
 	// resetting an allocator frees the memory that the command list was stored in
-	hr = commandAllocator[frameIndex]->Reset();
+	hr = d3d.cmdAlloc[d3d.frameIndex]->Reset();
 	if (FAILED(hr))
 	{
 
@@ -909,7 +911,7 @@ void JellyFishDev::UpdatePipelineTest()
 	// but in this tutorial we are only clearing the rtv, and do not actually need
 	// anything but an initial default pipeline, which is what we get by setting
 	// the second parameter to NULL
-	hr = commandList->Reset(commandAllocator[frameIndex], pipelineStateObject);
+	hr = d3d.cmdList->Reset(d3d.cmdAlloc[d3d.frameIndex], pipelineStateObject);
 	if (FAILED(hr))
 	{
 	
@@ -918,31 +920,31 @@ void JellyFishDev::UpdatePipelineTest()
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
 	// transition the "frameIndex" render target from the present state to the render target state so the command list draws to it starting from here
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	d3d.cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[d3d.frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvDescriptorSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), d3d.frameIndex, rtvDescriptorSize);
 
 	// set the render target for the output merger stage (the output of the pipeline)
-	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	d3d.cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
 	// Clear the render target by using the ClearRenderTargetView command
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	d3d.cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 	// draw triangle
-	commandList->SetGraphicsRootSignature(rootSignature); // set the root signature
-	commandList->RSSetViewports(1, &viewport); // set the viewports
-	commandList->RSSetScissorRects(1, &scissorRect); // set the scissor rects
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // set the vertex buffer (using the vertex buffer view)
-	commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
+	d3d.cmdList->SetGraphicsRootSignature(rootSignature); // set the root signature
+	d3d.cmdList->RSSetViewports(1, &viewport); // set the viewports
+	d3d.cmdList->RSSetScissorRects(1, &scissorRect); // set the scissor rects
+	d3d.cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
+	d3d.cmdList->IASetVertexBuffers(0, 1, &vertexBufferView); // set the vertex buffer (using the vertex buffer view)
+	d3d.cmdList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
 	// warning if present is called on the render target when it's not in the present state
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	d3d.cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[d3d.frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-	hr = commandList->Close();
+	hr = d3d.cmdList->Close();
 	if (FAILED(hr))
 	{
 		
@@ -956,22 +958,22 @@ void JellyFishDev::RenderTest()
     UpdatePipelineTest(); // update the pipeline by sending commands to the commandqueue
 
     // create an array of command lists (only one command list here)
-    ID3D12CommandList* ppCommandLists[] = { commandList };
+    ID3D12CommandList* ppCommandLists[] = { d3d.cmdList };
 
     // execute the array of command lists
-    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    d3d.cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
     // this command goes in at the end of our command queue. we will know when our command queue 
     // has finished because the fence value will be set to "fenceValue" from the GPU since the command
     // queue is being executed on the GPU
-    hr = commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
+    hr = d3d.cmdQueue->Signal(fence[d3d.frameIndex], fenceValue[d3d.frameIndex]);
     if (FAILED(hr))
     {
    
     }
 
     // present the current backbuffer
-    hr = swapChain->Present(0, 0);
+    hr = d3d.swapChain->Present(0, 0);
     if (FAILED(hr))
     {
 
@@ -984,14 +986,14 @@ void JellyFishDev::WaitForPreviousFrameTest()
 	HRESULT hr;
 
 	// swap the current rtv buffer index so we draw on the correct buffer
-	frameIndex = swapChain->GetCurrentBackBufferIndex();
-
+	//frameIndex = d3d.swapChain->GetCurrentBackBufferIndex();
+	d3d.frameIndex = d3d.swapChain->GetCurrentBackBufferIndex();
 	// if the current fence value is still less than "fenceValue", then we know the GPU has not finished executing
 	// the command queue since it has not reached the "commandQueue->Signal(fence, fenceValue)" command
-	if (fence[frameIndex]->GetCompletedValue() < fenceValue[frameIndex])
+	if (fence[d3d.frameIndex]->GetCompletedValue() < fenceValue[d3d.frameIndex])
 	{
 		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
-		hr = fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent);
+		hr = fence[d3d.frameIndex]->SetEventOnCompletion(fenceValue[d3d.frameIndex], fenceEvent);
 		if (FAILED(hr))
 		{
 			
@@ -1003,6 +1005,6 @@ void JellyFishDev::WaitForPreviousFrameTest()
 	}
 
 	// increment fenceValue for next frame
-	fenceValue[frameIndex]++;
+	fenceValue[d3d.frameIndex]++;
 }
 

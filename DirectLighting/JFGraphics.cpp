@@ -292,7 +292,7 @@ namespace D3DResources
 		rtvHandle = resources.rtvHeap->GetCPUDescriptorHandleForHeapStart();
 
 		// Create a RTV for each back buffer
-		for (UINT n = 0; n < 2; n++)
+		for (UINT n = 0; n < d3d.frameBufferCount; n++)
 		{
 			hr = d3d.swapChain->GetBuffer(n, IID_PPV_ARGS(&d3d.backBuffer[n]));
 			Utils::Validate(hr, "Error: failed to get swap chain buffer!");
@@ -349,7 +349,7 @@ namespace D3DResources
 	{
 		// Describe the RTV descriptor heap
 		D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = {};
-		rtvDesc.NumDescriptors = 2;
+		rtvDesc.NumDescriptors = d3d.frameBufferCount;
 		rtvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		rtvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
@@ -617,7 +617,7 @@ namespace D3D12
 	*/
 	void Create_Command_Allocator(D3D12Global& d3d)
 	{
-		for (UINT n = 0; n < 2; n++)
+		for (UINT n = 0; n < d3d.frameBufferCount; n++)
 		{
 			HRESULT hr = d3d.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&d3d.cmdAlloc[n]));
 			Utils::Validate(hr, "Error: failed to create the command allocator!");
@@ -670,7 +670,7 @@ namespace D3D12
 	{
 		// Describe the swap chain
 		DXGI_SWAP_CHAIN_DESC1 desc = {};
-		desc.BufferCount = 2;
+		desc.BufferCount = d3d.frameBufferCount;
 		desc.Width = d3d.width;
 		desc.Height = d3d.height;
 		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
