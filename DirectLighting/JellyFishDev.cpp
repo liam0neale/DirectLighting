@@ -658,9 +658,9 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	// -- Create a Fence & Fence Event -- //
 */
 	// create the fences
-	for (int i = 0; i < d3d.frameBufferCount; i++)
+	/*for (int i = 0; i < d3d.frameBufferCount; i++)
 	{
-		hr = d3d.device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i]));
+		hr = d3d.device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&d3d.fence[i]));
 		if (FAILED(hr))
 		{
 			return false;
@@ -673,7 +673,7 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	if (fenceEvent == nullptr)
 	{
 		return false;
-	}
+	}*/
 
 	// create root signature
 
@@ -857,8 +857,8 @@ bool JellyFishDev::InitRasterTest(LWindow* _window)
 	d3d.cmdQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-	fenceValue[d3d.frameIndex]++;
-	hr = d3d.cmdQueue->Signal(fence[d3d.frameIndex], fenceValue[d3d.frameIndex]);
+	d3d.fenceValues[d3d.frameIndex]++;
+	hr = d3d.cmdQueue->Signal(d3d.fence, d3d.fenceValues[d3d.frameIndex]);
 	if (FAILED(hr))
 	{
 		//Running = false;
@@ -891,8 +891,8 @@ void JellyFishDev::UpdatePipelineTest()
 	HRESULT hr;
 
 	// We have to wait for the gpu to finish with the command allocator before we reset it
-	WaitForPreviousFrameTest();
-
+	D3D12::MoveToNextFrame(d3d);
+	
 	// we can only reset an allocator once the gpu is done with it
 	// resetting an allocator frees the memory that the command list was stored in
 	hr = d3d.cmdAlloc[d3d.frameIndex]->Reset();
@@ -956,6 +956,7 @@ void JellyFishDev::RenderTest()
 	  HRESULT hr;
 
     UpdatePipelineTest(); // update the pipeline by sending commands to the commandqueue
+		
 
     // create an array of command lists (only one command list here)
     ID3D12CommandList* ppCommandLists[] = { d3d.cmdList };
@@ -966,12 +967,12 @@ void JellyFishDev::RenderTest()
     // this command goes in at the end of our command queue. we will know when our command queue 
     // has finished because the fence value will be set to "fenceValue" from the GPU since the command
     // queue is being executed on the GPU
-    hr = d3d.cmdQueue->Signal(fence[d3d.frameIndex], fenceValue[d3d.frameIndex]);
+    hr = d3d.cmdQueue->Signal(d3d.fence, d3d.fenceValues[d3d.frameIndex]);
     if (FAILED(hr))
     {
    
     }
-
+	
     // present the current backbuffer
     hr = d3d.swapChain->Present(0, 0);
     if (FAILED(hr))
@@ -990,10 +991,10 @@ void JellyFishDev::WaitForPreviousFrameTest()
 	d3d.frameIndex = d3d.swapChain->GetCurrentBackBufferIndex();
 	// if the current fence value is still less than "fenceValue", then we know the GPU has not finished executing
 	// the command queue since it has not reached the "commandQueue->Signal(fence, fenceValue)" command
-	if (fence[d3d.frameIndex]->GetCompletedValue() < fenceValue[d3d.frameIndex])
+	if (d3d.fence->GetCompletedValue() < d3d.fenceValues[d3d.frameIndex])
 	{
 		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
-		hr = fence[d3d.frameIndex]->SetEventOnCompletion(fenceValue[d3d.frameIndex], fenceEvent);
+		hr = d3d.fence->SetEventOnCompletion(d3d.fenceValues[d3d.frameIndex], d3d.fenceEvent);
 		if (FAILED(hr))
 		{
 			
@@ -1001,10 +1002,10 @@ void JellyFishDev::WaitForPreviousFrameTest()
 
 		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
 		// has reached "fenceValue", we know the command queue has finished executing
-		WaitForSingleObject(fenceEvent, INFINITE);
+		WaitForSingleObjectEx(d3d.fenceEvent, INFINITE, false);
 	}
 
 	// increment fenceValue for next frame
-	fenceValue[d3d.frameIndex]++;
+	d3d.fenceValues[d3d.frameIndex]++;
 }
 

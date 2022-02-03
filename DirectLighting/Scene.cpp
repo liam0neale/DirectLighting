@@ -80,123 +80,16 @@ bool Scene::onInit(LWindow* _window)
     ID3D12CommandList* pGraphicsList = { dx->cmdList };
     dx->cmdQueue->ExecuteCommandLists(1, &pGraphicsList);
 
-    D3D12::WaitForGPU(*dx);
-    D3D12::Reset_CommandList(*dx);
+   
   }
   
   if(!m_useRayTracing)
   {
     m_jellyFish.InitRasterTest(_window);
-  /*
-    bool succes = m_jellyFish.CreatePerObjectConstantBuffer(*dx, *resources, m_cube);
-
-    // build projection and view matrix
-    XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f * (3.14f / 180.0f), (float)_window->getWidth() / (float)_window->getHeight(), 0.1f, 1000.0f);
-    XMStoreFloat4x4(&m_camera.projection, tmpMat);
-
-    // set starting camera state
-    m_camera.pos = XMFLOAT4(0.0f, 2.0f, -4.0f, 0.0f);
-    m_camera.target = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-    m_camera.up = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-
-    // build view matrix
-    XMVECTOR cPos = XMLoadFloat4(&m_camera.pos);
-    XMVECTOR cTarg = XMLoadFloat4(&m_camera.target);
-    XMVECTOR cUp = XMLoadFloat4(&m_camera.up);
-    tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp);
-    XMStoreFloat4x4(&m_camera.view, tmpMat);
-
-    // set starting cubes position
-    // first cube
-    m_cube.pos = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f); // set cube 1's position
-    XMVECTOR posVec = XMLoadFloat4(&m_cube.pos); // create xmvector for cube1's position
-
-    tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube1's position vector
-    XMStoreFloat4x4(&m_cube.rotMat, XMMatrixIdentity()); // initialize cube1's rotation matrix to identity matrix
-    XMStoreFloat4x4(&m_cube.world, tmpMat); // store cube1's world matrix
-    
-    TESTVERTEX vList[] = {
-        { { 0.0f, 0.5f, 0.5f } },
-      { { 0.5f, -0.5f, 0.5f } },
-      { { -0.5f, -0.5f, 0.5f } },
-    };
-/*
-    Vertex vList[] = {
-      // front face
-      Vertex({-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f}),
-      Vertex({0.5f, -0.5f, -0.5f}, {1.0f, 1.0f }),
-      Vertex({ -0.5f, -0.5f, -0.5f}, { 0.0f, 1.0f }),
-      Vertex({  0.5f,  0.5f, -0.5f}, { 1.0f, 0.0f}),
-
-      // right side face
-      Vertex({  0.5f, -0.5f, -0.5f}, { 0.0f, 1.0f }),
-      Vertex({  0.5f,  0.5f,  0.5f}, { 1.0f, 0.0 }),
-      Vertex({  0.5f, -0.5f,  0.5f}, { 1.0f, 1.0f }),
-      Vertex({  0.5f,  0.5f, -0.5f}, { 0.0f, 0.0f }),
-
-      // left side face
-      Vertex({ -0.5f,  0.5f,  0.5f}, {  0.0f, 0.0f}),
-      Vertex({ -0.5f, -0.5f, -0.5f}, { 1.0f, 1.0f}),
-      Vertex({ -0.5f, -0.5f,  0.5f}, { 0.0f, 1.0f }),
-      Vertex({ -0.5f,  0.5f, -0.5f}, {  1.0f, 0.0f }),
-
-      // back face
-      Vertex({  0.5f,  0.5f,  0.5f}, { 0.0f, 0.0f }),
-      Vertex({ -0.5f, -0.5f,  0.5f}, { 1.0f, 1.0f }),
-      Vertex({  0.5f, -0.5f,  0.5f}, { 0.0f, 1.0f }),
-      Vertex({ -0.5f,  0.5f,  0.5f}, { 1.0f, 0.0f }),
-
-      // top face
-      Vertex({ -0.5f,  0.5f, -0.5f}, { 0.0f, 1.0f }),
-      Vertex({ 0.5f,  0.5f,  0.5f}, { 1.0f, 0.0f }),
-      Vertex({ 0.5f,  0.5f, -0.5f}, {  1.0f, 1.0f }),
-      Vertex({ -0.5f,  0.5f,  0.5f}, { 0.0f,0.0f }),
-
-      // bottom face
-      Vertex({  0.5f, -0.5f,  0.5f}, { 0.0f, 0.0f}),
-      Vertex({ -0.5f, -0.5f, -0.5f}, { 1.0f, 1.0f }),
-      Vertex({  0.5f, -0.5f, -0.5f}, { 0.0f,  1.0f }),
-      Vertex({ -0.5f, -0.5f,  0.5f}, {1.0f, 0.0f })
-    };*/
-    //for (size_t i = 0; i < ARRAYSIZE(vList); i++)
-   /// {
-     // m_cube.testVertex.push_back(vList[i]);
-   // }
-    /*DWORD iList[] = {
-      // ffront face
-      0, 1, 2, // first triangle
-      0, 3, 1, // second triangle
-
-      // left face
-      4, 5, 6, // first triangle
-      4, 7, 5, // second triangle
-
-      // right face
-      8, 9, 10, // first triangle
-      8, 11, 9, // second triangle
-
-      // back face
-      12, 13, 14, // first triangle
-      12, 15, 13, // second triangle
-
-      // top face
-      16, 17, 18, // first triangle
-      16, 19, 17, // second triangle
-
-      // bottom face
-      20, 21, 22, // first triangle
-      20, 23, 21, // second triangle
-    };
-    for (size_t i = 0; i < ARRAYSIZE(iList); i++)
-    {
-      m_cube.indices.push_back(iList[i]);
-    }*/
-    
-    //m_graphics.OnInit(*_window);
-   // m_jellyFish.CreateRasterProgram(*dx);
-   // m_jellyFish.CreateRasterPSO(*dx, m_cube);
   }
 
+  D3D12::WaitForGPU(*dx);
+  D3D12::Reset_CommandList(*dx);
  
   return result;
 }
@@ -245,8 +138,9 @@ bool Scene::onRender()
 {
   if (!m_useRayTracing)
   {
-   m_jellyFish.RenderTest();
-
+    
+    m_jellyFish.RenderTest();
+   
     // present the current backbuffer
    // hr = m_jellyFish.getDXGlobal()->swapChain->Present(0, 0);*/
   }
@@ -256,7 +150,6 @@ bool Scene::onRender()
     // Submit the command list and wait for the GPU to idle
     D3D12::Submit_CmdList(*m_jellyFish.getDXGlobal());
     D3D12::WaitForGPU(*m_jellyFish.getDXGlobal());
-
 
     D3D12::Present(*m_jellyFish.getDXGlobal());
     D3D12::MoveToNextFrame(*m_jellyFish.getDXGlobal());

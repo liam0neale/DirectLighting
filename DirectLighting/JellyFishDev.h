@@ -66,12 +66,12 @@ private:
 
 	//ID3D12GraphicsCommandList* commandList; // a command list we can record commands into, then execute them to render the frame
 
-	ID3D12Fence* fence[frameBufferCount];    // an object that is locked while our command list is being executed by the gpu. We need as many 
+	//ID3D12Fence* fence[frameBufferCount];    // an object that is locked while our command list is being executed by the gpu. We need as many 
 											 //as we have allocators (more if we want to know when the gpu is finished with an asset)
 
-	HANDLE fenceEvent; // a handle to an event when our fence is unlocked by the gpu
+	//HANDLE fenceEvent; // a handle to an event when our fence is unlocked by the gpu
 
-	UINT64 fenceValue[frameBufferCount]; // this value is incremented each frame. each fence will have its own value
+	//UINT64 fenceValue[frameBufferCount]; // this value is incremented each frame. each fence will have its own value
 
 	//int frameIndex; // current rtv we are on
 
