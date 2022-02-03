@@ -30,25 +30,28 @@ bool Scene::onInit(LWindow* _window)
   HWND win = _window->getWindow();
 
   D3D12Global* dx = m_jellyFish.getDXGlobal();
-  
+  DXRGlobal* dxr = m_jellyFish.getDXRGlobal();
+  D3D12ShaderCompilerInfo* shaderInfo = m_jellyFish.getShaderInfo();
+  D3D12Resources* resources = m_jellyFish.getResources();
+
+  D3D12::Create_Device(*dx);
+  D3D12::Create_Command_Queue(*dx);
+  D3D12::Create_Command_Allocator(*dx);
+  D3D12::Create_Fence(*dx);
+  D3D12::Create_SwapChain(*dx, win);
+  D3D12::Create_CommandList(*dx);
+  D3D12::Reset_CommandList(*dx);
+
+  // Create common resources
+  D3DResources::Create_Descriptor_Heaps(*dx, *resources);
+  D3DResources::Create_BackBuffer_RTV(*dx, *resources);
+
   if (m_useRayTracing)
   {
     
-    DXRGlobal* dxr = m_jellyFish.getDXRGlobal();
-    D3D12ShaderCompilerInfo* shaderInfo = m_jellyFish.getShaderInfo();
-    D3D12Resources* resources = m_jellyFish.getResources();
     
-    D3D12::Create_Device(*dx);
-    D3D12::Create_Command_Queue(*dx);
-    D3D12::Create_Command_Allocator(*dx);
-    D3D12::Create_Fence(*dx);
-    D3D12::Create_SwapChain(*dx, win);
-    D3D12::Create_CommandList(*dx);
-    D3D12::Reset_CommandList(*dx);
-
-    // Create common resources
-    D3DResources::Create_Descriptor_Heaps(*dx, *resources);
-    D3DResources::Create_BackBuffer_RTV(*dx, *resources);
+    
+ 
 
     // Load a model
     Utils::LoadModel(config.model, model, material);
@@ -83,12 +86,6 @@ bool Scene::onInit(LWindow* _window)
   
   if(!m_useRayTracing)
   {
-    D3D12::Create_Device(*dx);
-    D3D12::Create_Command_Queue(*dx);
-    D3D12::Create_Command_Allocator(*dx);
-    D3D12::Create_SwapChain(*dx, win);
-    D3D12::Create_CommandList(*dx);
-    D3D12::Reset_CommandList(*dx);
     m_jellyFish.InitRasterTest(_window);
   /*
     bool succes = m_jellyFish.CreatePerObjectConstantBuffer(*dx, *resources, m_cube);

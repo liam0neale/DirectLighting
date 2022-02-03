@@ -58,9 +58,9 @@ private:
 
 	//ID3D12CommandQueue* commandQueue; // container for command lists
 
-	ID3D12DescriptorHeap* rtvDescriptorHeap; // a descriptor heap to hold resources like the render targets
+	//ID3D12DescriptorHeap* rtvDescriptorHeap; // a descriptor heap to hold resources like the render targets
 
-	ID3D12Resource* renderTargets[frameBufferCount]; // number of render targets equal to buffer count
+	//ID3D12Resource* renderTargets[frameBufferCount]; // number of render targets equal to buffer count
 
 	//ID3D12CommandAllocator* commandAllocator[frameBufferCount]; // we want enough allocators for each buffer * number of threads (we only have one thread)
 
@@ -75,7 +75,7 @@ private:
 
 	//int frameIndex; // current rtv we are on
 
-	int rtvDescriptorSize; // size of the rtv descriptor on the device (all front and back buffers will be the same size)
+	//int rtvDescriptorSize; // size of the rtv descriptor on the device (all front and back buffers will be the same size)
 
 	
 	ID3D12PipelineState* pipelineStateObject; // pso containing a pipeline state
