@@ -27,7 +27,7 @@ namespace Window
 	HRESULT Create(LONG width, LONG height, HINSTANCE& instance, HWND& window, LPCSTR title);
 }
 
-namespace D3DResources
+namespace JFResources
 {
 	void Create_Buffer(D3D12Global& d3d, D3D12BufferCreateInfo& info, ID3D12Resource** ppResource);
 	void Create_Texture(D3D12Global& d3d, D3D12Resources& resources, Material& material);
@@ -46,7 +46,7 @@ namespace D3DResources
 	void Destroy(D3D12Resources& resources);
 }
 
-namespace D3DShaders
+namespace JFShaders
 {
 	void Init_Shader_Compiler(D3D12ShaderCompilerInfo& shaderCompiler);
 	void Compile_Shader(D3D12ShaderCompilerInfo& compilerInfo, RtProgram& program);
@@ -54,7 +54,7 @@ namespace D3DShaders
 	void Destroy(D3D12ShaderCompilerInfo& shaderCompiler);
 }
 
-namespace D3D12
+namespace JFDX12
 {
 	void Create_Device(D3D12Global& d3d);
 	void Create_CommandList(D3D12Global& d3d);
@@ -75,7 +75,7 @@ namespace D3D12
 	void Destroy(D3D12Global& d3d);
 }
 
-namespace DXR
+namespace JFRay
 {
 	void Create_Bottom_Level_AS(D3D12Global& d3d, DXRGlobal& dxr, D3D12Resources& resources, Model& model);
 	void Create_Top_Level_AS(D3D12Global& d3d, DXRGlobal& dxr, D3D12Resources& resources);
@@ -90,4 +90,9 @@ namespace DXR
 	void Build_Command_List(D3D12Global& d3d, DXRGlobal& dxr, D3D12Resources& resources);
 
 	void Destroy(DXRGlobal& dxr);
+}
+
+namespace JFRaster
+{
+
 }

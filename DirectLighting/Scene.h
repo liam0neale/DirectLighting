@@ -17,7 +17,7 @@ private:
   static JellyFishDev m_jellyFish;
   static Graphics m_graphics;
   LWindow m_window;
-  bool m_useRayTracing = false;
+  bool m_useRayTracing = true;
 
   Model model;
   Material material;

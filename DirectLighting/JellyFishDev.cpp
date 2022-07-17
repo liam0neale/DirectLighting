@@ -29,7 +29,7 @@ void JellyFishDev::Init(ConfigInfo& config)
 void JellyFishDev::Update()
 {
 
-		D3DResources::Update_View_CB(d3d, resources);
+		JFResources::Update_View_CB(d3d, resources);
 
 
 }

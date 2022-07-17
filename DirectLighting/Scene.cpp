@@ -34,17 +34,17 @@ bool Scene::onInit(LWindow* _window)
   D3D12ShaderCompilerInfo* shaderInfo = m_jellyFish.getShaderInfo();
   D3D12Resources* resources = m_jellyFish.getResources();
 
-  D3D12::Create_Device(*dx);
-  D3D12::Create_Command_Queue(*dx);
-  D3D12::Create_Command_Allocator(*dx);
-  D3D12::Create_Fence(*dx);
-  D3D12::Create_SwapChain(*dx, win);
-  D3D12::Create_CommandList(*dx);
-  D3D12::Reset_CommandList(*dx);
+  JFDX12::Create_Device(*dx);
+  JFDX12::Create_Command_Queue(*dx);
+  JFDX12::Create_Command_Allocator(*dx);
+  JFDX12::Create_Fence(*dx);
+  JFDX12::Create_SwapChain(*dx, win);
+  JFDX12::Create_CommandList(*dx);
+  JFDX12::Reset_CommandList(*dx);
 
   // Create common resources
-  D3DResources::Create_Descriptor_Heaps(*dx, *resources);
-  D3DResources::Create_BackBuffer_RTV(*dx, *resources);
+  JFResources::Create_Descriptor_Heaps(*dx, *resources);
+  JFResources::Create_BackBuffer_RTV(*dx, *resources);
 
   if (m_useRayTracing)
   {
@@ -57,31 +57,31 @@ bool Scene::onInit(LWindow* _window)
     Utils::LoadModel(config.model, model, material);
 
     // Initialize the shader compiler
-    D3DShaders::Init_Shader_Compiler(*m_jellyFish.getShaderInfo());
+    JFShaders::Init_Shader_Compiler(*m_jellyFish.getShaderInfo());
     
-    D3DResources::Create_Vertex_Buffer(*dx, *resources, model);
-    D3DResources::Create_Index_Buffer(*dx, *resources, model);
-    D3DResources::Create_Texture(*dx, *resources, material);
-    D3DResources::Create_View_CB(*dx, *resources);
-    D3DResources::Create_Material_CB(*dx, *resources, material);
+    JFResources::Create_Vertex_Buffer(*dx, *resources, model);
+    JFResources::Create_Index_Buffer(*dx, *resources, model);
+    JFResources::Create_Texture(*dx, *resources, material);
+    JFResources::Create_View_CB(*dx, *resources);
+    JFResources::Create_Material_CB(*dx, *resources, material);
 
     // Create DXR specific resources
-    DXR::Create_Bottom_Level_AS(*dx, *dxr, *resources, model);
-    DXR::Create_Top_Level_AS(*dx, *dxr, *resources);
-    DXR::Create_DXR_Output(*dx, *resources);
-    DXR::Create_Descriptor_Heaps(*dx, *dxr, *resources, model);
-    DXR::Create_RayGen_Program(*dx, *dxr, *shaderInfo);
-    DXR::Create_Miss_Program(*dx, *dxr, *shaderInfo);
-    DXR::Create_Closest_Hit_Program(*dx, *dxr, *shaderInfo);
-    DXR::Create_Pipeline_State_Object(*dx, *dxr);
-    DXR::Create_Shader_Table(*dx, *dxr, *resources);
+    JFRay::Create_Bottom_Level_AS(*dx, *dxr, *resources, model);
+    JFRay::Create_Top_Level_AS(*dx, *dxr, *resources);
+    JFRay::Create_DXR_Output(*dx, *resources);
+    JFRay::Create_Descriptor_Heaps(*dx, *dxr, *resources, model);
+    JFRay::Create_RayGen_Program(*dx, *dxr, *shaderInfo);
+    JFRay::Create_Miss_Program(*dx, *dxr, *shaderInfo);
+    JFRay::Create_Closest_Hit_Program(*dx, *dxr, *shaderInfo);
+    JFRay::Create_Pipeline_State_Object(*dx, *dxr);
+    JFRay::Create_Shader_Table(*dx, *dxr, *resources);
 
     dx->cmdList->Close();
     ID3D12CommandList* pGraphicsList = { dx->cmdList };
     dx->cmdQueue->ExecuteCommandLists(1, &pGraphicsList);
 
-    D3D12::WaitForGPU(*dx);
-    D3D12::Reset_CommandList(*dx);
+    JFDX12::WaitForGPU(*dx);
+    JFDX12::Reset_CommandList(*dx);
   }
   
   if(!m_useRayTracing)
@@ -236,7 +236,7 @@ bool Scene::onUpdate()
   }
   else
   {
-    D3DResources::Update_View_CB(*m_jellyFish.getDXGlobal(), *m_jellyFish.getResources());
+    JFResources::Update_View_CB(*m_jellyFish.getDXGlobal(), *m_jellyFish.getResources());
   }
   return true;
 }
@@ -252,15 +252,15 @@ bool Scene::onRender()
   }
   else
   {
-    DXR::Build_Command_List(*m_jellyFish.getDXGlobal(), *m_jellyFish.getDXRGlobal(), *m_jellyFish.getResources());
+    JFRay::Build_Command_List(*m_jellyFish.getDXGlobal(), *m_jellyFish.getDXRGlobal(), *m_jellyFish.getResources());
     // Submit the command list and wait for the GPU to idle
-    D3D12::Submit_CmdList(*m_jellyFish.getDXGlobal());
-    D3D12::WaitForGPU(*m_jellyFish.getDXGlobal());
+    JFDX12::Submit_CmdList(*m_jellyFish.getDXGlobal());
+    JFDX12::WaitForGPU(*m_jellyFish.getDXGlobal());
 
 
-    D3D12::Present(*m_jellyFish.getDXGlobal());
-    D3D12::MoveToNextFrame(*m_jellyFish.getDXGlobal());
-    D3D12::Reset_CommandList(*m_jellyFish.getDXGlobal());
+    JFDX12::Present(*m_jellyFish.getDXGlobal());
+    JFDX12::MoveToNextFrame(*m_jellyFish.getDXGlobal());
+    JFDX12::Reset_CommandList(*m_jellyFish.getDXGlobal());
   }
   
 
@@ -271,13 +271,13 @@ bool Scene::onDestroy()
 {
   if (m_useRayTracing)
   {
-    D3D12::WaitForGPU(*m_jellyFish.getDXGlobal());
+    JFDX12::WaitForGPU(*m_jellyFish.getDXGlobal());
     CloseHandle(m_jellyFish.getDXGlobal()->fenceEvent);
 
-    DXR::Destroy(*m_jellyFish.getDXRGlobal());
-    D3DResources::Destroy(*m_jellyFish.getResources());
-    D3DShaders::Destroy(*m_jellyFish.getShaderInfo());
-    D3D12::Destroy(*m_jellyFish.getDXGlobal());
+    JFRay::Destroy(*m_jellyFish.getDXRGlobal());
+    JFResources::Destroy(*m_jellyFish.getResources());
+    JFShaders::Destroy(*m_jellyFish.getShaderInfo());
+    JFDX12::Destroy(*m_jellyFish.getDXGlobal());
   }
   return true;
 }

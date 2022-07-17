@@ -91,7 +91,7 @@ namespace Window
 // Resource Functions
 //--------------------------------------------------------------------------------------
 
-namespace D3DResources
+namespace JFResources
 {
 
 	/**
@@ -433,7 +433,7 @@ namespace D3DResources
 // D3D12 Shader Functions
 //--------------------------------------------------------------------------------------
 
-namespace D3DShaders
+namespace JFShaders
 {
 
 	/**
@@ -534,7 +534,7 @@ namespace D3DShaders
 // D3D12 Functions
 //--------------------------------------------------------------------------------------
 
-namespace D3D12
+namespace JFDX12
 {
 
 	/**
@@ -823,7 +823,7 @@ namespace D3D12
 // DXR Functions
 //--------------------------------------------------------------------------------------
 
-namespace DXR
+namespace JFRay
 {
 
 	/**
@@ -863,7 +863,7 @@ namespace DXR
 		// Create the BLAS scratch buffer
 		D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-		D3DResources::Create_Buffer(d3d, bufferInfo, &dxr.BLAS.pScratch);
+		JFResources::Create_Buffer(d3d, bufferInfo, &dxr.BLAS.pScratch);
 #if NAME_D3D_RESOURCES
 		dxr.BLAS.pScratch->SetName(L"DXR BLAS Scratch");
 #endif
@@ -871,7 +871,7 @@ namespace DXR
 		// Create the BLAS buffer
 		bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
 		bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-		D3DResources::Create_Buffer(d3d, bufferInfo, &dxr.BLAS.pResult);
+		JFResources::Create_Buffer(d3d, bufferInfo, &dxr.BLAS.pResult);
 #if NAME_D3D_RESOURCES
 		dxr.BLAS.pResult->SetName(L"DXR BLAS");
 #endif
@@ -912,7 +912,7 @@ namespace DXR
 		instanceBufferInfo.heapType = D3D12_HEAP_TYPE_UPLOAD;
 		instanceBufferInfo.flags = D3D12_RESOURCE_FLAG_NONE;
 		instanceBufferInfo.state = D3D12_RESOURCE_STATE_GENERIC_READ;
-		D3DResources::Create_Buffer(d3d, instanceBufferInfo, &dxr.TLAS.pInstanceDesc);
+		JFResources::Create_Buffer(d3d, instanceBufferInfo, &dxr.TLAS.pInstanceDesc);
 #if NAME_D3D_RESOURCES
 		dxr.TLAS.pInstanceDesc->SetName(L"DXR TLAS Instance Descriptors");
 #endif
@@ -945,7 +945,7 @@ namespace DXR
 		// Create TLAS scratch buffer
 		D3D12BufferCreateInfo bufferInfo(ASPreBuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		bufferInfo.alignment = max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
-		D3DResources::Create_Buffer(d3d, bufferInfo, &dxr.TLAS.pScratch);
+		JFResources::Create_Buffer(d3d, bufferInfo, &dxr.TLAS.pScratch);
 #if NAME_D3D_RESOURCES
 		dxr.TLAS.pScratch->SetName(L"DXR TLAS Scratch");
 #endif
@@ -953,7 +953,7 @@ namespace DXR
 		// Create the TLAS buffer
 		bufferInfo.size = ASPreBuildInfo.ResultDataMaxSizeInBytes;
 		bufferInfo.state = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-		D3DResources::Create_Buffer(d3d, bufferInfo, &dxr.TLAS.pResult);
+		JFResources::Create_Buffer(d3d, bufferInfo, &dxr.TLAS.pResult);
 #if NAME_D3D_RESOURCES
 		dxr.TLAS.pResult->SetName(L"DXR TLAS");
 #endif
@@ -981,7 +981,7 @@ namespace DXR
 	{
 		// Load and compile the ray generation shader
 		dxr.rgs = RtProgram(D3D12ShaderInfo(L"shaders/RayGen.hlsl", L"", L"lib_6_3"));
-		D3DShaders::Compile_Shader(shaderCompiler, dxr.rgs);
+		JFShaders::Compile_Shader(shaderCompiler, dxr.rgs);
 
 		// Describe the ray generation root signature
 		D3D12_DESCRIPTOR_RANGE ranges[3];
@@ -1018,7 +1018,7 @@ namespace DXR
 		rootDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
 
 		// Create the root signature
-		dxr.rgs.pRootSignature = D3D12::Create_Root_Signature(d3d, rootDesc);
+		dxr.rgs.pRootSignature = JFDX12::Create_Root_Signature(d3d, rootDesc);
 #if NAME_D3D_RESOURCES
 		dxr.rgs.pRootSignature->SetName(L"DXR RGS Root Signature");
 #endif
@@ -1031,7 +1031,7 @@ namespace DXR
 	{
 		// Load and compile the miss shader
 		dxr.miss = RtProgram(D3D12ShaderInfo(L"shaders/Miss.hlsl", L"", L"lib_6_3"));
-		D3DShaders::Compile_Shader(shaderCompiler, dxr.miss);
+		JFShaders::Compile_Shader(shaderCompiler, dxr.miss);
 	}
 
 	/**
@@ -1042,7 +1042,7 @@ namespace DXR
 		// Load and compile the Closest Hit shader
 		dxr.hit = HitProgram(L"Hit");
 		dxr.hit.chs = RtProgram(D3D12ShaderInfo(L"shaders/ClosestHit.hlsl", L"", L"lib_6_3"));
-		D3DShaders::Compile_Shader(shaderCompiler, dxr.hit.chs);
+		JFShaders::Compile_Shader(shaderCompiler, dxr.hit.chs);
 	}
 
 	/**
@@ -1240,7 +1240,7 @@ namespace DXR
 
 		// Create the shader table buffer
 		D3D12BufferCreateInfo bufferInfo(shaderTableSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
-		D3DResources::Create_Buffer(d3d, bufferInfo, &dxr.shaderTable);
+		JFResources::Create_Buffer(d3d, bufferInfo, &dxr.shaderTable);
 #if NAME_D3D_RESOURCES
 		dxr.shaderTable->SetName(L"DXR Shader Table");
 #endif
@@ -1485,5 +1485,10 @@ namespace DXR
 		SAFE_RELEASE(dxr.rtpso);
 		SAFE_RELEASE(dxr.rtpsoInfo);
 	}
+
+}
+
+namespace JFRaster
+{
 
 }
